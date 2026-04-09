@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:latest
+    container_name: etheria_db
+    restart: always
+    environment:
+      POSTGRES_USER: etheria
+      POSTGRES_PASSWORD: etheria123
+      POSTGRES_DB: etheria_global_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./postgres_etheria/init_etheria.sql:/docker-entrypoint-initdb.d/init.sql
+
+  dynamic_db:
+    image: mysql:8.0
+    container_name: dynamic_mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: etheria_sql
+      MYSQL_DATABASE: dynamic_etheria
+      MYSQL_USER: etheria
+      MYSQL_PASSWORD: etheria123
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./mysql_dynamic/init_dynamic.sql:/docker-entrypoint-initdb.d/init.sql
+
+networks:
+  default:
+    name: holding_network
