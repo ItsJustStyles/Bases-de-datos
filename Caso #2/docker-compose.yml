@@ -19,10 +19,10 @@ services:
     container_name: dynamic_mysql
     restart: always
     environment:
-      MYSQL_ROOT_PASSWORD: etheria_sql
-      MYSQL_DATABASE: dynamic_etheria
-      MYSQL_USER: etheria
-      MYSQL_PASSWORD: etheria123
+      MYSQL_ROOT_PASSWORD: brands_sql
+      MYSQL_DATABASE: dynamic_brands
+      MYSQL_USER: dynamic
+      MYSQL_PASSWORD: brands123
     ports:
       - "3307:3306"
     volumes:
