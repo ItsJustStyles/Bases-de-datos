@@ -24,7 +24,7 @@ services:
       MYSQL_USER: etheria
       MYSQL_PASSWORD: etheria123
     ports:
-      - "3306:3306"
+      - "3307:3306"
     volumes:
       - ./mysql_dynamic/init_dynamic.sql:/docker-entrypoint-initdb.d/init.sql
 
