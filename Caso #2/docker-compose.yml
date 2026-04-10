@@ -20,7 +20,7 @@ services:
     restart: always
     environment:
       MYSQL_ROOT_PASSWORD: brands_sql
-      MYSQL_DATABASE: dynamic_brands
+      MYSQL_DATABASE: dynamic_brands_db
       MYSQL_USER: dynamic
       MYSQL_PASSWORD: brands123
     ports:
