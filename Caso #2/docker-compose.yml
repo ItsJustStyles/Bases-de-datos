@@ -10,7 +10,7 @@ services:
       POSTGRES_PASSWORD: etheria123
       POSTGRES_DB: etheria_global_db
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - ./postgres_etheria/init_etheria.sql:/docker-entrypoint-initdb.d/init.sql
 
