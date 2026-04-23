@@ -6,64 +6,264 @@
 
 ## Countries
 
-- country_id
+- countryId
   - tipo: INT UNSIGNED AUTO_INCREMENT
   - pk: si
   - descripcion: identificador único del país
 
-- country_name
+- countryName
   - tipo: VARCHAR(100)
   - pk: no
   - restriccion: NOT NULL, UNIQUE
   - descripcion: nombre del país donde opera o puede operar una tienda (ej: Colombia, Perú, México)
 
-- iso_code
+- isoCode
   - tipo: CHAR(3)
   - pk: no
   - restriccion: NOT NULL, UNIQUE
-  - descripcion: codigo que identifica a un pais, ej: (CRC, NIC, USA)
+  - descripcion: código ISO 3166-1 alpha-3 que identifica al país (ej: CRC, NIC, USA)
 
-- currency_code
-  - tipo: CHAR(3)
-  - pk: no
-  - restriccion: NOT NULL
-  - descripcion: código ISO 4217 de la moneda local (ej: CRC, NIO, USD)
-
-- currency_symbol
-  - tipo: VARCHAR(5)
-  - pk: no
-  - descripcion: símbolo de la moneda local (ej: $)
-
-- tax_rate_percent
-  - tipo: DECIMAL(5, 2)
-  - pk: no
-  - restriccion: DEFAULT 0.00
-  - descripcion: porcentaje de impuesto al consumidor final aplicable en el país (IVA, IGV, etc.)
-
-- regulatory_notes
-  - tipo: TEXT
-  - pk: no
-  - descripcion: notas sobre requisitos legales o sanitarios para la venta de productos de salud y belleza en el país
-
-- is_active
+- isActive
   - tipo: TINYINT(1)
   - pk: no
   - restriccion: DEFAULT 1
   - descripcion: indica si el país está activo para apertura de nuevas tiendas
 
-- is_deleted
+- isDeleted
   - tipo: TINYINT(1)
   - pk: no
   - restriccion: DEFAULT 0
   - descripcion: borrado lógico del registro
 
-- created_at
+- createdAt
   - tipo: TIMESTAMP
   - pk: no
   - restriccion: DEFAULT CURRENT_TIMESTAMP
   - descripcion: fecha y hora de creación del registro
 
-- updated_at
+- updatedAt
+  - tipo: TIMESTAMP
+  - pk: no
+  - restriccion: DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  - descripcion: fecha y hora de la última modificación
+
+## Currencies
+
+- currencyId
+  - tipo: INT UNSIGNED AUTO_INCREMENT
+  - pk: si
+  - descripcion: identificador único de la moneda
+
+- currencyCode
+  - tipo: CHAR(3)
+  - pk: no
+  - restriccion: NOT NULL, UNIQUE
+  - descripcion: código ISO 4217 de la moneda (ej: CRC, NIO, USD)
+
+- currencySymbol
+  - tipo: VARCHAR(5)
+  - pk: no
+  - descripcion: símbolo visual de la moneda (ej: ₡, C$, $)
+
+- currencyName
+  - tipo: VARCHAR(80)
+  - pk: no
+  - restriccion: NOT NULL
+  - descripcion: nombre completo de la moneda (ej: Colón costarricense)
+
+- countryId
+  - tipo: INT UNSIGNED (FK -> Countries.countryId)
+  - pk: no
+  - restriccion: NOT NULL
+  - descripcion: país al que pertenece esta moneda
+
+- isDeleted
+  - tipo: TINYINT(1)
+  - pk: no
+  - restriccion: DEFAULT 0
+  - descripcion: borrado lógico del registro
+
+- createdAt
+  - tipo: TIMESTAMP
+  - pk: no
+  - restriccion: DEFAULT CURRENT_TIMESTAMP
+  - descripcion: fecha y hora de creación del registro
+
+- updatedAt
+  - tipo: TIMESTAMP
+  - pk: no
+  - restriccion: DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  - descripcion: fecha y hora de la última modificación
+
+## CountryTaxes
+
+- countryTaxId
+  - tipo: INT UNSIGNED AUTO_INCREMENT
+  - pk: si
+  - descripcion: identificador único del registro de impuesto por país
+
+- countryId
+  - tipo: INT UNSIGNED (FK -> Countries.countryId)
+  - pk: no
+  - restriccion: NOT NULL
+  - descripcion: país al que aplica este registro de impuesto
+
+- taxRatePercent
+  - tipo: DECIMAL(5, 2)
+  - pk: no
+  - restriccion: NOT NULL, DEFAULT 0.00
+  - descripcion: porcentaje de impuesto al consumidor final aplicable (IVA, IGV, etc.)
+
+- regulatoryNotes
+  - tipo: TEXT
+  - pk: no
+  - descripcion: notas sobre requisitos legales o sanitarios para la venta de productos de salud y belleza en el país
+
+- validFrom
+  - tipo: DATE
+  - pk: no
+  - restriccion: NOT NULL
+  - descripcion: fecha desde la cual aplica este registro de impuesto
+
+- validTo
+  - tipo: DATE
+  - pk: no
+  - descripcion: fecha hasta la cual aplica este registro (NULL si está vigente)
+
+- isDeleted
+  - tipo: TINYINT(1)
+  - pk: no
+  - restriccion: DEFAULT 0
+  - descripcion: borrado lógico del registro
+
+- createdAt
+  - tipo: TIMESTAMP
+  - pk: no
+  - restriccion: DEFAULT CURRENT_TIMESTAMP
+  - descripcion: fecha y hora de creación del registro
+
+- updatedAt
+  - tipo: TIMESTAMP
+  - pk: no
+  - restriccion: DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  - descripcion: fecha y hora de la última modificación
+
+## Regions
+
+- regionId
+  - tipo: INT UNSIGNED AUTO_INCREMENT
+  - pk: si
+  - descripcion: identificador único del estado, provincia o región administrativa
+
+- countryId
+  - tipo: INT UNSIGNED (FK -> Countries.countryId)
+  - pk: no
+  - restriccion: NOT NULL
+  - descripcion: país al que pertenece la región
+
+- regionName
+  - tipo: VARCHAR(100)
+  - pk: no
+  - restriccion: NOT NULL
+  - descripcion: nombre de la región, provincia o estado (ej: San José, Antioquia)
+
+- isDeleted
+  - tipo: TINYINT(1)
+  - pk: no
+  - restriccion: DEFAULT 0
+  - descripcion: borrado lógico del registro
+
+- createdAt
+  - tipo: TIMESTAMP
+  - pk: no
+  - restriccion: DEFAULT CURRENT_TIMESTAMP
+  - descripcion: fecha y hora de creación del registro
+
+- updatedAt
+  - tipo: TIMESTAMP
+  - pk: no
+  - restriccion: DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  - descripcion: fecha y hora de la última modificación
+
+## Cities
+
+- cityId
+  - tipo: INT UNSIGNED AUTO_INCREMENT
+  - pk: si
+  - descripcion: identificador único de la ciudad
+
+- regionId
+  - tipo: INT UNSIGNED (FK -> Regions.regionId)
+  - pk: no
+  - restriccion: NOT NULL
+  - descripcion: región administrativa a la que pertenece la ciudad
+
+- cityName
+  - tipo: VARCHAR(100)
+  - pk: no
+  - restriccion: NOT NULL
+  - descripcion: nombre de la ciudad o cantón (ej: Medellín, Desamparados)
+
+- isDeleted
+  - tipo: TINYINT(1)
+  - pk: no
+  - restriccion: DEFAULT 0
+  - descripcion: borrado lógico del registro
+
+- createdAt
+  - tipo: TIMESTAMP
+  - pk: no
+  - restriccion: DEFAULT CURRENT_TIMESTAMP
+  - descripcion: fecha y hora de creación del registro
+
+- updatedAt
+  - tipo: TIMESTAMP
+  - pk: no
+  - restriccion: DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  - descripcion: fecha y hora de la última modificación
+
+## Addresses
+
+- addressId
+  - tipo: INT UNSIGNED AUTO_INCREMENT
+  - pk: si
+  - descripcion: identificador único de la dirección
+
+- cityId
+  - tipo: INT UNSIGNED (FK -> Cities.cityId)
+  - pk: no
+  - restriccion: NOT NULL
+  - descripcion: ciudad a la que pertenece esta dirección
+
+- addressLine1
+  - tipo: VARCHAR(200)
+  - pk: no
+  - restriccion: NOT NULL
+  - descripcion: línea principal de la dirección (calle, número, barrio)
+
+- addressLine2
+  - tipo: VARCHAR(200)
+  - pk: no
+  - descripcion: información adicional de la dirección (apartamento, edificio, señas)
+
+- postalCode
+  - tipo: VARCHAR(20)
+  - pk: no
+  - descripcion: código postal de la dirección
+
+- isDeleted
+  - tipo: TINYINT(1)
+  - pk: no
+  - restriccion: DEFAULT 0
+  - descripcion: borrado lógico del registro
+
+- createdAt
+  - tipo: TIMESTAMP
+  - pk: no
+  - restriccion: DEFAULT CURRENT_TIMESTAMP
+  - descripcion: fecha y hora de creación del registro
+
+- updatedAt
   - tipo: TIMESTAMP
   - pk: no
   - restriccion: DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
@@ -71,42 +271,42 @@
 
 ## Brands
 
-- brand_id
+- brandId
   - tipo: INT UNSIGNED AUTO_INCREMENT
   - pk: si
   - descripcion: identificador único de la marca blanca generada por la IA
 
-- brand_name
+- brandName
   - tipo: VARCHAR(150)
   - pk: no
   - restriccion: NOT NULL
   - descripcion: nombre comercial de la marca blanca
 
-- brand_focus
+- brandFocus
   - tipo: VARCHAR(100)
   - pk: no
   - restriccion: NOT NULL
   - descripcion: enfoque o nicho de mercado de la marca (ej: cosmética natural, nutrición deportiva)
 
-- is_active
+- isActive
   - tipo: TINYINT(1)
   - pk: no
   - restriccion: DEFAULT 1
   - descripcion: indica si la marca está activa y en uso
 
-- is_deleted
+- isDeleted
   - tipo: TINYINT(1)
   - pk: no
   - restriccion: DEFAULT 0
   - descripcion: borrado lógico del registro
 
-- created_at
+- createdAt
   - tipo: TIMESTAMP
   - pk: no
   - restriccion: DEFAULT CURRENT_TIMESTAMP
   - descripcion: fecha y hora de creación del registro
 
-- updated_at
+- updatedAt
   - tipo: TIMESTAMP
   - pk: no
   - restriccion: DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
@@ -114,206 +314,247 @@
 
 ## Websites
 
-- website_id
+- websiteId
   - tipo: INT UNSIGNED AUTO_INCREMENT
   - pk: si
   - descripcion: identificador único del sitio web de e-commerce
 
-- brand_id
-  - tipo: INT UNSIGNED (FK -> Brands.brand_id)
+- brandId
+  - tipo: INT UNSIGNED (FK -> Brands.brandId)
   - pk: no
   - restriccion: NOT NULL
   - descripcion: marca blanca asociada al sitio web
 
-- country_id
-  - tipo: INT UNSIGNED (FK -> Countries.country_id)
+- countryId
+  - tipo: INT UNSIGNED (FK -> Countries.countryId)
   - pk: no
   - restriccion: NOT NULL
   - descripcion: país donde opera este sitio web
 
-- site_url
+- siteUrl
   - tipo: VARCHAR(500)
   - pk: no
   - restriccion: UNIQUE
   - descripcion: URL del sitio web de e-commerce desplegado
 
-- marketing_focus
+- marketingFocus
   - tipo: VARCHAR(200)
   - pk: no
-  - descripcion: enfoque de marketing particular de este sitio 
+  - descripcion: enfoque de marketing particular de este sitio
 
-- launch_date
+- siteConfig
+  - tipo: JSON
+  - pk: no
+  - descripcion: configuración visual del sitio web generada por la IA (paleta de colores, tipografías, URLs de imágenes, logos y demás estilos)
+
+- launchDate
   - tipo: DATE
   - pk: no
   - descripcion: fecha en que el sitio fue desplegado
 
-- close_date
+- closeDate
   - tipo: DATE
   - pk: no
   - descripcion: fecha en que el sitio fue cerrado (NULL si está activo)
 
-- is_deleted
+- isDeleted
   - tipo: TINYINT(1)
   - pk: no
   - restriccion: DEFAULT 0
   - descripcion: borrado lógico del registro
 
-- created_at
+- createdAt
   - tipo: TIMESTAMP
   - pk: no
   - restriccion: DEFAULT CURRENT_TIMESTAMP
   - descripcion: fecha y hora de creación del registro
 
-- updated_at
+- updatedAt
   - tipo: TIMESTAMP
   - pk: no
   - restriccion: DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
   - descripcion: fecha y hora de la última modificación
 
-## Product_catalog
+## ProductCatalog
 
-- catalog_product_id
+- catalogProductId
   - tipo: INT UNSIGNED AUTO_INCREMENT
   - pk: si
   - descripcion: identificador único del producto en el catálogo de Dynamic Brands
 
-- etheria_individual_product_id
+- etheriaProductId
   - tipo: INT UNSIGNED
   - pk: no
   - restriccion: NOT NULL
-  - descripcion: ID del producto individual en Etheria Global
+  - descripcion: ID del producto individual en Etheria Global (referencia lógica entre sistemas)
 
-- brand_id
-  - tipo: INT UNSIGNED (FK -> Brands.brand_id)
+- brandId
+  - tipo: INT UNSIGNED (FK -> Brands.brandId)
   - pk: no
   - restriccion: NOT NULL
   - descripcion: marca blanca bajo la que se vende este producto
 
-- branded_name
+- brandedName
   - tipo: VARCHAR(150)
   - pk: no
   - restriccion: NOT NULL
   - descripcion: nombre comercial del producto bajo la marca blanca
 
-- branded_description
+- brandedDescription
   - tipo: TEXT
   - pk: no
   - descripcion: descripción de marketing generada por la IA para este producto bajo esta marca
 
-- branded_image_url
+- brandedImageUrl
   - tipo: VARCHAR(500)
   - pk: no
   - descripcion: URL de la imagen del producto con el etiquetado de la marca blanca
 
-- category_label
+- categoryLabel
   - tipo: VARCHAR(100)
   - pk: no
-  - descripcion: nombre de categoría usado en el sitio 
+  - descripcion: nombre de categoría usado en el sitio
 
-- health_claims
+- healthClaims
   - tipo: TEXT
   - pk: no
   - descripcion: propiedades medicinales y beneficios de salud comunicados al consumidor, adaptados por país y marca
 
-- is_active
+- isActive
   - tipo: TINYINT(1)
   - pk: no
   - restriccion: DEFAULT 1
   - descripcion: indica si el producto está activo en catálogo
 
-- is_deleted
+- isDeleted
   - tipo: TINYINT(1)
   - pk: no
   - restriccion: DEFAULT 0
   - descripcion: borrado lógico del registro
 
-- created_at
+- createdAt
   - tipo: TIMESTAMP
   - pk: no
   - restriccion: DEFAULT CURRENT_TIMESTAMP
   - descripcion: fecha y hora de creación del registro
 
-- updated_at
+- updatedAt
   - tipo: TIMESTAMP
   - pk: no
   - restriccion: DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
   - descripcion: fecha y hora de la última modificación
 
-## Website_products
+## WebsiteProducts
 
-- website_product_id
+- websiteProductId
   - tipo: INT UNSIGNED AUTO_INCREMENT
   - pk: si
   - descripcion: identificador único de la relación entre un sitio web y un producto del catálogo
 
-- website_id
-  - tipo: INT UNSIGNED (FK -> Websites.website_id)
+- websiteId
+  - tipo: INT UNSIGNED (FK -> Websites.websiteId)
   - pk: no
   - restriccion: NOT NULL
   - descripcion: sitio web donde se publica el producto
 
-- catalog_product_id
-  - tipo: INT UNSIGNED (FK -> Product_catalog.catalog_product_id)
+- catalogProductId
+  - tipo: INT UNSIGNED (FK -> ProductCatalog.catalogProductId)
   - pk: no
   - restriccion: NOT NULL
   - descripcion: producto del catálogo publicado en el sitio
 
-- sale_price_local
-  - tipo: DECIMAL(14, 2)
-  - pk: no
-  - restriccion: NOT NULL, CHECK (sale_price_local > 0)
-  - descripcion: precio de venta del producto en la moneda local del país del sitio
-
-- is_featured
+- isFeatured
   - tipo: TINYINT(1)
   - pk: no
   - restriccion: DEFAULT 0
   - descripcion: indica si el producto es destacado en el sitio
 
-- stock_display
+- stockDisplay
   - tipo: INT UNSIGNED
   - pk: no
   - restriccion: DEFAULT 0
-  - descripcion: unidades disponibles en el sitio para mostrar al comprador (depende del stock de etheria)
+  - descripcion: unidades disponibles a mostrar al comprador (sincronizado desde Etheria)
 
-- is_active
+- isActive
   - tipo: TINYINT(1)
   - pk: no
   - restriccion: DEFAULT 1
   - descripcion: indica si el producto está activo y visible en el sitio
 
-- is_deleted
+- isDeleted
   - tipo: TINYINT(1)
   - pk: no
   - restriccion: DEFAULT 0
   - descripcion: borrado lógico del registro
 
-- created_at
+- createdAt
   - tipo: TIMESTAMP
   - pk: no
   - restriccion: DEFAULT CURRENT_TIMESTAMP
   - descripcion: fecha y hora de creación del registro
 
-- updated_at
+- updatedAt
   - tipo: TIMESTAMP
   - pk: no
   - restriccion: DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
   - descripcion: fecha y hora de la última modificación
 
+## WebsiteProductPrices
+
+- priceId
+  - tipo: INT UNSIGNED AUTO_INCREMENT
+  - pk: si
+  - descripcion: identificador único del registro de precio
+
+- websiteProductId
+  - tipo: INT UNSIGNED (FK -> WebsiteProducts.websiteProductId)
+  - pk: no
+  - restriccion: NOT NULL
+  - descripcion: producto en el sitio al que aplica este precio
+
+- salePriceLocal
+  - tipo: DECIMAL(14, 2)
+  - pk: no
+  - restriccion: NOT NULL, CHECK (salePriceLocal > 0)
+  - descripcion: precio de venta del producto en la moneda local del país del sitio
+
+- currencyId
+  - tipo: INT UNSIGNED (FK -> Currencies.currencyId)
+  - pk: no
+  - restriccion: NOT NULL
+  - descripcion: moneda en la que está expresado el precio
+
+- validFrom
+  - tipo: DATE
+  - pk: no
+  - restriccion: NOT NULL
+  - descripcion: fecha desde la que aplica este precio
+
+- validTo
+  - tipo: DATE
+  - pk: no
+  - descripcion: fecha hasta la que aplica este precio (NULL si es el precio vigente)
+
+- createdAt
+  - tipo: TIMESTAMP
+  - pk: no
+  - restriccion: DEFAULT CURRENT_TIMESTAMP
+  - descripcion: fecha y hora de creación del registro
+
 ## Customers
 
-- customer_id
+- customerId
   - tipo: INT UNSIGNED AUTO_INCREMENT
   - pk: si
   - descripcion: identificador único del cliente
 
-- first_name
+- firstName
   - tipo: VARCHAR(80)
   - pk: no
   - restriccion: NOT NULL
   - descripcion: nombre del cliente
 
-- last_name
+- lastName
   - tipo: VARCHAR(80)
   - pk: no
   - restriccion: NOT NULL
@@ -323,7 +564,13 @@
   - tipo: VARCHAR(150)
   - pk: no
   - restriccion: NOT NULL, UNIQUE
-  - descripcion: correo electrónico del cliente
+  - descripcion: correo electrónico del cliente, usado también como login
+
+- passwordHash
+  - tipo: VARCHAR(255)
+  - pk: no
+  - restriccion: NOT NULL
+  - descripcion: hash de la contraseña del cliente (bcrypt u otro algoritmo seguro)
 
 - phone
   - tipo: VARCHAR(30)
@@ -331,30 +578,73 @@
   - restriccion: NOT NULL
   - descripcion: teléfono de contacto del cliente
 
-- country_id
-  - tipo: INT UNSIGNED (FK -> Countries.country_id)
+- countryId
+  - tipo: INT UNSIGNED (FK -> Countries.countryId)
   - pk: no
   - restriccion: NOT NULL
   - descripcion: país de residencia del cliente
 
-- shipping_address
-  - tipo: VARCHAR(300)
-  - pk: no
-  - descripcion: dirección de envío principal del cliente
-
-- is_deleted
+- isDeleted
   - tipo: TINYINT(1)
   - pk: no
   - restriccion: DEFAULT 0
   - descripcion: borrado lógico del registro
 
-- created_at
+- createdAt
   - tipo: TIMESTAMP
   - pk: no
   - restriccion: DEFAULT CURRENT_TIMESTAMP
   - descripcion: fecha y hora de creación del registro
 
-- updated_at
+- updatedAt
+  - tipo: TIMESTAMP
+  - pk: no
+  - restriccion: DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  - descripcion: fecha y hora de la última modificación
+
+## CustomerAddresses
+
+- customerAddressId
+  - tipo: INT UNSIGNED AUTO_INCREMENT
+  - pk: si
+  - descripcion: identificador único de la dirección de envío del cliente
+
+- customerId
+  - tipo: INT UNSIGNED (FK -> Customers.customerId)
+  - pk: no
+  - restriccion: NOT NULL
+  - descripcion: cliente propietario de esta dirección
+
+- addressId
+  - tipo: INT UNSIGNED (FK -> Addresses.addressId)
+  - pk: no
+  - restriccion: NOT NULL
+  - descripcion: dirección asociada al cliente
+
+- alias
+  - tipo: VARCHAR(60)
+  - pk: no
+  - descripcion: nombre identificador de la dirección para el cliente (ej: Casa, Trabajo)
+
+- isDefault
+  - tipo: TINYINT(1)
+  - pk: no
+  - restriccion: DEFAULT 0
+  - descripcion: indica si esta es la dirección de envío predeterminada del cliente
+
+- isDeleted
+  - tipo: TINYINT(1)
+  - pk: no
+  - restriccion: DEFAULT 0
+  - descripcion: borrado lógico del registro
+
+- createdAt
+  - tipo: TIMESTAMP
+  - pk: no
+  - restriccion: DEFAULT CURRENT_TIMESTAMP
+  - descripcion: fecha y hora de creación del registro
+
+- updatedAt
   - tipo: TIMESTAMP
   - pk: no
   - restriccion: DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
@@ -362,58 +652,64 @@
 
 ## Orders
 
-- order_id
+- orderId
   - tipo: INT UNSIGNED AUTO_INCREMENT
   - pk: si
   - descripcion: identificador único de la orden de compra del cliente
 
-- customer_id
-  - tipo: INT UNSIGNED (FK -> Customers.customer_id)
+- customerId
+  - tipo: INT UNSIGNED (FK -> Customers.customerId)
   - pk: no
   - restriccion: NOT NULL
   - descripcion: cliente que realizó la orden
 
-- website_id
-  - tipo: INT UNSIGNED (FK -> Websites.website_id)
+- websiteId
+  - tipo: INT UNSIGNED (FK -> Websites.websiteId)
   - pk: no
   - restriccion: NOT NULL
   - descripcion: sitio web en el que se realizó la compra
 
-- order_date
+- customerAddressId
+  - tipo: INT UNSIGNED (FK -> CustomerAddresses.customerAddressId)
+  - pk: no
+  - restriccion: NOT NULL
+  - descripcion: dirección de envío seleccionada por el cliente para esta orden
+
+- orderDate
   - tipo: TIMESTAMP
   - pk: no
   - restriccion: DEFAULT CURRENT_TIMESTAMP
   - descripcion: fecha y hora en que se realizó la orden
 
-- total_amount_local
+- totalAmountLocal
   - tipo: DECIMAL(14, 2)
   - pk: no
   - restriccion: NOT NULL
   - descripcion: monto total de la orden en la moneda local del país del sitio
 
-- currency_code
-  - tipo: CHAR(3)
+- currencyId
+  - tipo: INT UNSIGNED (FK -> Currencies.currencyId)
   - pk: no
   - restriccion: NOT NULL
-  - descripcion: código ISO 4217 de la moneda en que se realizó la venta
+  - descripcion: moneda en la que se realizó la venta
 
-- exchange_rate_to_usd
+- exchangeRateId
+  - tipo: INT UNSIGNED (FK -> ExchangeRates.exchangeRateId)
+  - pk: no
+  - restriccion: NOT NULL
+  - descripcion: tipo de cambio vigente al momento de la venta
+
+- exchangeRateSnapshot
   - tipo: DECIMAL(18, 6)
   - pk: no
   - restriccion: NOT NULL
-  - descripcion: tipo de cambio vigente al momento de la venta 
+  - descripcion: valor exacto del tipo de cambio al momento de la venta (snapshot para trazabilidad)
 
-- total_amount_usd
+- totalAmountUsd
   - tipo: DECIMAL(14, 4)
   - pk: no
   - restriccion: NOT NULL
   - descripcion: monto total de la orden convertido a USD al momento de la venta
-
-- shipping_address
-  - tipo: VARCHAR(300)
-  - pk: no
-  - restriccion: NOT NULL
-  - descripcion: dirección de entrega específica para esta orden
 
 - status
   - tipo: VARCHAR(30)
@@ -421,49 +717,44 @@
   - restriccion: NOT NULL, DEFAULT 'PENDIENTE', CHECK (status IN ('PENDIENTE', 'CONFIRMADA', 'EN_PREPARACION', 'ENVIADA', 'ENTREGADA', 'CANCELADA', 'REEMBOLSADA'))
   - descripcion: estado actual de la orden
 
-- etheria_dispatch_order_id
+- etheriaDispatchOrderId
   - tipo: INT UNSIGNED
   - pk: no
-  - descripcion: ID de la orden de despacho en Etheria Global (depende de etheria)
+  - descripcion: ID de la orden de despacho en Etheria Global (referencia lógica entre sistemas)
 
-- courier_tracking_code
-  - tipo: VARCHAR(100)
-  - pk: no
-  - descripcion: código de rastreo asignado por el courier service externo
-
-- is_deleted
+- isDeleted
   - tipo: TINYINT(1)
   - pk: no
   - restriccion: DEFAULT 0
   - descripcion: borrado lógico del registro
 
-- created_at
+- createdAt
   - tipo: TIMESTAMP
   - pk: no
   - restriccion: DEFAULT CURRENT_TIMESTAMP
   - descripcion: fecha y hora de creación del registro
 
-- updated_at
+- updatedAt
   - tipo: TIMESTAMP
   - pk: no
   - restriccion: DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
   - descripcion: fecha y hora de la última modificación
 
-## Order_items
+## OrderItems
 
-- order_item_id
+- orderItemId
   - tipo: INT UNSIGNED AUTO_INCREMENT
   - pk: si
   - descripcion: identificador único del ítem dentro de una orden
 
-- order_id
-  - tipo: INT UNSIGNED (FK -> Orders.order_id)
+- orderId
+  - tipo: INT UNSIGNED (FK -> Orders.orderId)
   - pk: no
   - restriccion: NOT NULL
   - descripcion: orden a la que pertenece este ítem
 
-- website_product_id
-  - tipo: INT UNSIGNED (FK -> Website_products.website_product_id)
+- websiteProductId
+  - tipo: INT UNSIGNED (FK -> WebsiteProducts.websiteProductId)
   - pk: no
   - restriccion: NOT NULL
   - descripcion: producto publicado en el sitio que fue comprado
@@ -474,67 +765,125 @@
   - restriccion: NOT NULL, CHECK (quantity > 0)
   - descripcion: cantidad de unidades compradas
 
-- unit_price_local
+- unitPriceLocal
   - tipo: DECIMAL(14, 2)
   - pk: no
   - restriccion: NOT NULL
-  - descripcion: precio unitario en moneda local al momento de la compra 
+  - descripcion: precio unitario en moneda local al momento de la compra (snapshot)
 
-- subtotal_local
+- subtotalLocal
   - tipo: DECIMAL(14, 2)
   - pk: no
   - restriccion: NOT NULL
-  - descripcion: subtotal del ítem en moneda local 
+  - descripcion: subtotal del ítem en moneda local (quantity * unitPriceLocal)
 
-- is_deleted
+- isDeleted
   - tipo: TINYINT(1)
   - pk: no
   - restriccion: DEFAULT 0
   - descripcion: borrado lógico del registro
 
-- created_at
+- createdAt
   - tipo: TIMESTAMP
   - pk: no
   - restriccion: DEFAULT CURRENT_TIMESTAMP
   - descripcion: fecha y hora de creación del registro
 
-## Shipping_records
+## Couriers
 
-- shipping_id
+- courierId
+  - tipo: INT UNSIGNED AUTO_INCREMENT
+  - pk: si
+  - descripcion: identificador único del courier service
+
+- courierName
+  - tipo: VARCHAR(100)
+  - pk: no
+  - restriccion: NOT NULL, UNIQUE
+  - descripcion: nombre del courier service externo (ej: DHL, FedEx, Correos de Costa Rica)
+
+- contactEmail
+  - tipo: VARCHAR(150)
+  - pk: no
+  - descripcion: correo electrónico de contacto del courier
+
+- contactPhone
+  - tipo: VARCHAR(30)
+  - pk: no
+  - descripcion: teléfono de contacto del courier
+
+- trackingUrlTemplate
+  - tipo: VARCHAR(300)
+  - pk: no
+  - descripcion: plantilla de URL para rastreo de paquetes (ej: https://courier.com/track/{code})
+
+- isActive
+  - tipo: TINYINT(1)
+  - pk: no
+  - restriccion: DEFAULT 1
+  - descripcion: indica si el courier está activo y disponible para uso
+
+- isDeleted
+  - tipo: TINYINT(1)
+  - pk: no
+  - restriccion: DEFAULT 0
+  - descripcion: borrado lógico del registro
+
+- createdAt
+  - tipo: TIMESTAMP
+  - pk: no
+  - restriccion: DEFAULT CURRENT_TIMESTAMP
+  - descripcion: fecha y hora de creación del registro
+
+- updatedAt
+  - tipo: TIMESTAMP
+  - pk: no
+  - restriccion: DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  - descripcion: fecha y hora de la última modificación
+
+## ShippingRecords
+
+- shippingId
   - tipo: INT UNSIGNED AUTO_INCREMENT
   - pk: si
   - descripcion: identificador único del registro de envío
 
-- order_id
-  - tipo: INT UNSIGNED (FK -> Orders.order_id)
+- orderId
+  - tipo: INT UNSIGNED (FK -> Orders.orderId)
   - pk: no
   - restriccion: NOT NULL, UNIQUE
   - descripcion: orden asociada al envío
 
-- courier_name
-  - tipo: VARCHAR(100)
+- courierId
+  - tipo: INT UNSIGNED (FK -> Couriers.courierId)
   - pk: no
   - restriccion: NOT NULL
-  - descripcion: nombre del courier service externo responsable del envío (tercero)
+  - descripcion: courier service responsable del envío
 
-- tracking_code
+- trackingCode
   - tipo: VARCHAR(100)
   - pk: no
   - restriccion: UNIQUE
   - descripcion: código de rastreo del envío asignado por el courier
 
-- shipping_cost_local
+- shippingCostLocal
   - tipo: DECIMAL(12, 2)
   - pk: no
   - restriccion: DEFAULT 0.00
   - descripcion: costo del envío cobrado al cliente en moneda local
 
-- estimated_delivery_date
+- currencyId
+  - tipo: INT UNSIGNED (FK -> Currencies.currencyId)
+  - pk: no
+  - restriccion: NOT NULL
+  - descripcion: moneda en la que está expresado el costo del envío
+
+- estimatedDeliveryDate
   - tipo: DATE
   - pk: no
   - descripcion: fecha estimada de entrega al cliente final
 
-- actual_delivery_date
+- actualDeliveryDate
   - tipo: DATE
   - pk: no
   - descripcion: fecha real de entrega al cliente final
@@ -545,61 +894,55 @@
   - restriccion: NOT NULL, DEFAULT 'PENDIENTE', CHECK (status IN ('PENDIENTE', 'RETIRADO_HUB', 'EN_TRANSITO', 'EN_ADUANA', 'ENTREGADO', 'FALLIDO'))
   - descripcion: estado actual del envío
 
-- destination_country_id
-  - tipo: INT UNSIGNED (FK -> Countries.country_id)
+- destinationCountryId
+  - tipo: INT UNSIGNED (FK -> Countries.countryId)
   - pk: no
   - restriccion: NOT NULL
   - descripcion: país de destino del envío
 
-- health_permit_number
+- healthPermitNumber
   - tipo: VARCHAR(100)
   - pk: no
   - descripcion: número del permiso sanitario requerido para la importación en el país destino
 
-- is_deleted
+- isDeleted
   - tipo: TINYINT(1)
   - pk: no
   - restriccion: DEFAULT 0
   - descripcion: borrado lógico del registro
 
-- created_at
+- createdAt
   - tipo: TIMESTAMP
   - pk: no
   - restriccion: DEFAULT CURRENT_TIMESTAMP
   - descripcion: fecha y hora de creación del registro
 
-- updated_at
+- updatedAt
   - tipo: TIMESTAMP
   - pk: no
   - restriccion: DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
   - descripcion: fecha y hora de la última modificación
 
-## Exchange_rates
+## ExchangeRates
 
-- exchange_rate_id
+- exchangeRateId
   - tipo: INT UNSIGNED AUTO_INCREMENT
   - pk: si
   - descripcion: identificador del registro de tipo de cambio
 
-- country_id
-  - tipo: INT UNSIGNED (FK -> Countries.country_id)
+- currencyId
+  - tipo: INT UNSIGNED (FK -> Currencies.currencyId)
   - pk: no
   - restriccion: NOT NULL
-  - descripcion: país cuya moneda local se está registrando
+  - descripcion: moneda local cuya tasa se está registrando
 
-- currency_code
-  - tipo: CHAR(3)
-  - pk: no
-  - restriccion: NOT NULL
-  - descripcion: código ISO 4217 de la moneda (ej: CRC, NIO, USD)
-
-- rate_to_usd
+- rateToUsd
   - tipo: DECIMAL(18, 6)
   - pk: no
-  - restriccion: NOT NULL, CHECK (rate_to_usd > 0)
-  - descripcion: tasa de conversión de la moneda local a USD
+  - restriccion: NOT NULL, CHECK (rateToUsd > 0)
+  - descripcion: tasa de conversión de la moneda local a USD (1 moneda local = X USD)
 
-- rate_date
+- rateDate
   - tipo: DATE
   - pk: no
   - restriccion: NOT NULL
@@ -608,62 +951,68 @@
 - source
   - tipo: VARCHAR(100)
   - pk: no
-  - descripcion: fuente de la tasa (ej: Banco Central)
+  - descripcion: fuente de la tasa (ej: Banco Central de Costa Rica)
 
-- created_at
+- createdAt
   - tipo: TIMESTAMP
   - pk: no
   - restriccion: DEFAULT CURRENT_TIMESTAMP
   - descripcion: fecha y hora de creación del registro
 
-## Process_log
+## ProcessLog
 
-- log_id
+- logId
   - tipo: BIGINT UNSIGNED AUTO_INCREMENT
   - pk: si
   - descripcion: identificador único del evento de log
 
-- sp_name
-  - tipo: VARCHAR(100)
+- eventSource
+  - tipo: VARCHAR(150)
   - pk: no
   - restriccion: NOT NULL
-  - descripcion: nombre del stored procedure que generó el log
+  - descripcion: origen del evento registrado (ej: nombre del trigger, job, módulo de aplicación o proceso)
 
-- action_description
-  - tipo: TEXT
+- eventType
+  - tipo: VARCHAR(60)
   - pk: no
   - restriccion: NOT NULL
-  - descripcion: descripción detallada del paso ejecutado o el error ocurrido
+  - descripcion: categoría o tipo de operación registrada (ej: INSERT, UPDATE, SYNC, PAYMENT)
 
-- affected_table
+- affectedTable
   - tipo: VARCHAR(100)
   - pk: no
   - descripcion: tabla afectada por la operación registrada
 
-- affected_record_id
-  - tipo: INT UNSIGNED
+- affectedRecordId
+  - tipo: BIGINT UNSIGNED
   - pk: no
   - descripcion: ID del registro afectado en la tabla destino
+
+- description
+  - tipo: TEXT
+  - pk: no
+  - restriccion: NOT NULL
+  - descripcion: descripción detallada del evento ocurrido o del error capturado
 
 - status
   - tipo: VARCHAR(20)
   - pk: no
   - restriccion: NOT NULL, CHECK (status IN ('INFO', 'SUCCESS', 'WARNING', 'ERROR'))
-  - descripcion: nivel del evento registrado
+  - descripcion: nivel de severidad del evento registrado
 
-- error_detail
+- errorDetail
   - tipo: TEXT
   - pk: no
-  - descripcion: detalle técnico del error capturado en el bloque DECLARE HANDLER (mensaje de condición MySQL)
+  - descripcion: detalle técnico del error (stack trace, mensaje de condición MySQL u otro contexto de fallo)
 
-- executed_at
+- executedAt
   - tipo: TIMESTAMP
   - pk: no
   - restriccion: DEFAULT CURRENT_TIMESTAMP
-  - descripcion: fecha y hora exacta en que se ejecutó el paso registrado
+  - descripcion: fecha y hora exacta en que ocurrió el evento
 
-- db_user
+- dbUser
   - tipo: VARCHAR(100)
   - pk: no
   - restriccion: DEFAULT (CURRENT_USER())
-  - descripcion: usuario de base de datos que ejecutó el SP
+  - descripcion: usuario de base de datos que originó el evento

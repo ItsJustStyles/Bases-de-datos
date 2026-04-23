@@ -6,29 +6,291 @@
 
 ## Countries
 
-- country_id
+- countryId
   - tipo: serial
   - pk: si
   - descripcion: identificador único del país
 
-- country_name
+- countryName
   - tipo: varchar(100)
   - pk: no
   - restriccion: NOT NULL, UNIQUE
   - descripcion: nombre del país de origen del proveedor o producto
 
-- iso_code
+- isoCode
   - tipo: char(3)
   - pk: no
   - restriccion: NOT NULL, UNIQUE
-  - descripcion: codigo que identifica a un pais, ej: (CRC, NIC, USA)
+  - descripcion: código ISO 3166-1 alpha-3 que identifica al país (ej: CRC, NIC, USA)
 
-- region
+- isDeleted
+  - tipo: boolean
+  - pk: no
+  - restriccion: DEFAULT FALSE
+  - descripcion: borrado lógico del registro
+
+- createdAt
+  - tipo: timestamp
+  - pk: no
+  - restriccion: DEFAULT CURRENT_TIMESTAMP
+  - descripcion: fecha y hora de creación del registro
+
+- updatedAt
+  - tipo: timestamp
+  - pk: no
+  - restriccion: DEFAULT CURRENT_TIMESTAMP
+  - descripcion: fecha y hora de la última modificación
+
+## GeographicRegions
+
+- geographicRegionId
+  - tipo: serial
+  - pk: si
+  - descripcion: identificador único de la región geográfica mundial
+
+- regionName
   - tipo: varchar(100)
   - pk: no
-  - descripcion: región geográfica del país (ej: América Central, Sudamérica, Asia)
+  - restriccion: NOT NULL, UNIQUE
+  - descripcion: nombre de la región geográfica (ej: América Central, Sudamérica, Asia Oriental)
 
-- is_deleted
+- isDeleted
+  - tipo: boolean
+  - pk: no
+  - restriccion: DEFAULT FALSE
+  - descripcion: borrado lógico del registro
+
+- createdAt
+  - tipo: timestamp
+  - pk: no
+  - restriccion: DEFAULT CURRENT_TIMESTAMP
+  - descripcion: fecha y hora de creación del registro
+
+## CountryRegions
+
+- countryRegionId
+  - tipo: serial
+  - pk: si
+  - descripcion: identificador único de la relación país-región geográfica
+
+- countryId
+  - tipo: integer (FK -> Countries.countryId)
+  - pk: no
+  - restriccion: NOT NULL
+  - descripcion: país asociado a la región
+
+- geographicRegionId
+  - tipo: integer (FK -> GeographicRegions.geographicRegionId)
+  - pk: no
+  - restriccion: NOT NULL
+  - descripcion: región geográfica a la que pertenece el país
+
+- createdAt
+  - tipo: timestamp
+  - pk: no
+  - restriccion: DEFAULT CURRENT_TIMESTAMP
+  - descripcion: fecha y hora de creación del registro
+
+## Currencies
+
+- currencyId
+  - tipo: serial
+  - pk: si
+  - descripcion: identificador único de la moneda
+
+- currencyCode
+  - tipo: char(3)
+  - pk: no
+  - restriccion: NOT NULL, UNIQUE
+  - descripcion: código ISO 4217 de la moneda (ej: CRC, NIO, USD)
+
+- currencySymbol
+  - tipo: varchar(5)
+  - pk: no
+  - descripcion: símbolo visual de la moneda (ej: ₡, C$, $)
+
+- currencyName
+  - tipo: varchar(80)
+  - pk: no
+  - restriccion: NOT NULL
+  - descripcion: nombre completo de la moneda (ej: Dólar estadounidense)
+
+- countryId
+  - tipo: integer (FK -> Countries.countryId)
+  - pk: no
+  - restriccion: NOT NULL
+  - descripcion: país al que pertenece esta moneda
+
+- isDeleted
+  - tipo: boolean
+  - pk: no
+  - restriccion: DEFAULT FALSE
+  - descripcion: borrado lógico del registro
+
+- createdAt
+  - tipo: timestamp
+  - pk: no
+  - restriccion: DEFAULT CURRENT_TIMESTAMP
+  - descripcion: fecha y hora de creación del registro
+
+- updatedAt
+  - tipo: timestamp
+  - pk: no
+  - restriccion: DEFAULT CURRENT_TIMESTAMP
+  - descripcion: fecha y hora de la última modificación
+
+## AdminRegions
+
+- adminRegionId
+  - tipo: serial
+  - pk: si
+  - descripcion: identificador único de la región administrativa (estado, provincia, departamento)
+
+- countryId
+  - tipo: integer (FK -> Countries.countryId)
+  - pk: no
+  - restriccion: NOT NULL
+  - descripcion: país al que pertenece la región administrativa
+
+- regionName
+  - tipo: varchar(100)
+  - pk: no
+  - restriccion: NOT NULL
+  - descripcion: nombre de la región administrativa (ej: Antioquia, San José, Jalisco)
+
+- isDeleted
+  - tipo: boolean
+  - pk: no
+  - restriccion: DEFAULT FALSE
+  - descripcion: borrado lógico del registro
+
+- createdAt
+  - tipo: timestamp
+  - pk: no
+  - restriccion: DEFAULT CURRENT_TIMESTAMP
+  - descripcion: fecha y hora de creación del registro
+
+- updatedAt
+  - tipo: timestamp
+  - pk: no
+  - restriccion: DEFAULT CURRENT_TIMESTAMP
+  - descripcion: fecha y hora de la última modificación
+
+## Cities
+
+- cityId
+  - tipo: serial
+  - pk: si
+  - descripcion: identificador único de la ciudad
+
+- adminRegionId
+  - tipo: integer (FK -> AdminRegions.adminRegionId)
+  - pk: no
+  - restriccion: NOT NULL
+  - descripcion: región administrativa a la que pertenece la ciudad
+
+- cityName
+  - tipo: varchar(100)
+  - pk: no
+  - restriccion: NOT NULL
+  - descripcion: nombre de la ciudad o municipio
+
+- isDeleted
+  - tipo: boolean
+  - pk: no
+  - restriccion: DEFAULT FALSE
+  - descripcion: borrado lógico del registro
+
+- createdAt
+  - tipo: timestamp
+  - pk: no
+  - restriccion: DEFAULT CURRENT_TIMESTAMP
+  - descripcion: fecha y hora de creación del registro
+
+- updatedAt
+  - tipo: timestamp
+  - pk: no
+  - restriccion: DEFAULT CURRENT_TIMESTAMP
+  - descripcion: fecha y hora de la última modificación
+
+## Addresses
+
+- addressId
+  - tipo: serial
+  - pk: si
+  - descripcion: identificador único de la dirección física
+
+- cityId
+  - tipo: integer (FK -> Cities.cityId)
+  - pk: no
+  - restriccion: NOT NULL
+  - descripcion: ciudad a la que pertenece esta dirección
+
+- addressLine1
+  - tipo: varchar(200)
+  - pk: no
+  - restriccion: NOT NULL
+  - descripcion: línea principal de la dirección (calle, número, barrio)
+
+- addressLine2
+  - tipo: varchar(200)
+  - pk: no
+  - descripcion: información adicional de la dirección (oficina, bodega, señas)
+
+- postalCode
+  - tipo: varchar(20)
+  - pk: no
+  - descripcion: código postal de la dirección
+
+- isDeleted
+  - tipo: boolean
+  - pk: no
+  - restriccion: DEFAULT FALSE
+  - descripcion: borrado lógico del registro
+
+- createdAt
+  - tipo: timestamp
+  - pk: no
+  - restriccion: DEFAULT CURRENT_TIMESTAMP
+  - descripcion: fecha y hora de creación del registro
+
+- updatedAt
+  - tipo: timestamp
+  - pk: no
+  - restriccion: DEFAULT CURRENT_TIMESTAMP
+  - descripcion: fecha y hora de la última modificación
+
+## Persons
+
+- personId
+  - tipo: serial
+  - pk: si
+  - descripcion: identificador único de la persona (contacto de proveedor, usuario interno u otro rol)
+
+- firstName
+  - tipo: varchar(80)
+  - pk: no
+  - restriccion: NOT NULL
+  - descripcion: nombre de la persona
+
+- lastName
+  - tipo: varchar(80)
+  - pk: no
+  - restriccion: NOT NULL
+  - descripcion: apellido de la persona
+
+- email
+  - tipo: varchar(150)
+  - pk: no
+  - restriccion: UNIQUE
+  - descripcion: correo electrónico de la persona
+
+- phone
+  - tipo: varchar(30)
+  - pk: no
+  - descripcion: teléfono de contacto de la persona
+
+- isDeleted
   - tipo: boolean
   - pk: no
   - restriccion: DEFAULT FALSE
@@ -48,51 +310,40 @@
 
 ## Suppliers
 
-- supplier_id
+- supplierId
   - tipo: serial
   - pk: si
   - descripcion: identificador único del proveedor
 
-- supplier_name
+- supplierName
   - tipo: varchar(150)
   - pk: no
   - restriccion: NOT NULL
   - descripcion: nombre o razón social del proveedor
 
-- contact_name
-  - tipo: varchar(100)
+- primaryContactId
+  - tipo: integer (FK -> Persons.personId)
   - pk: no
-  - descripcion: nombre del contacto principal del proveedor
+  - descripcion: persona que actúa como contacto principal del proveedor
 
-- contact_email
-  - tipo: varchar(150)
-  - pk: no
-  - restriccion: UNIQUE
-  - descripcion: correo electrónico del contacto del proveedor
-
-- contact_phone
-  - tipo: varchar(30)
-  - pk: no
-  - descripcion: teléfono del contacto del proveedor
-
-- country_id
-  - tipo: integer (FK -> Countries.country_id)
+- countryId
+  - tipo: integer (FK -> Countries.countryId)
   - pk: no
   - restriccion: NOT NULL
   - descripcion: país de origen del proveedor
 
-- address
-  - tipo: varchar(255)
+- addressId
+  - tipo: integer (FK -> Addresses.addressId)
   - pk: no
   - descripcion: dirección física del proveedor
 
-- is_active
+- isActive
   - tipo: boolean
   - pk: no
   - restriccion: DEFAULT TRUE
   - descripcion: indica si el proveedor está activo o fue deshabilitado
 
-- is_deleted
+- isDeleted
   - tipo: boolean
   - pk: no
   - restriccion: DEFAULT FALSE
@@ -110,25 +361,25 @@
   - restriccion: DEFAULT CURRENT_TIMESTAMP
   - descripcion: fecha y hora de la última modificación
 
-## Categories_products
+## ProductCategories
 
-- category_product_id
+- categoryId
   - tipo: serial
   - pk: si
-  - descripcion: identificador de las categorías de los productos
+  - descripcion: identificador único de la categoría de producto
 
-- category_name
+- categoryName
   - tipo: varchar(100)
   - pk: no
   - restriccion: NOT NULL, UNIQUE
-  - descripcion: el nombre de la categoría del producto
+  - descripcion: nombre de la categoría del producto (ej: Cosmética Capilar, Aromaterapia)
 
-- category_description
+- categoryDescription
   - tipo: varchar(200)
   - pk: no
   - descripcion: descripción detallada de la categoría
 
-- is_deleted
+- isDeleted
   - tipo: boolean
   - pk: no
   - restriccion: DEFAULT FALSE
@@ -148,10 +399,10 @@
 
 ## MeasurementUnits
 
-- measurementUnitId
+- unitId
   - tipo: serial
   - pk: si
-  - descripcion: indicador de las unidades de medida
+  - descripcion: identificador único de la unidad de medida
 
 - unitName
   - tipo: varchar(20)
@@ -159,7 +410,7 @@
   - restriccion: NOT NULL, UNIQUE
   - descripcion: nombre de la unidad de medida (ej: kg, L, ml, unidades)
 
-- is_deleted
+- isDeleted
   - tipo: boolean
   - pk: no
   - restriccion: DEFAULT FALSE
@@ -171,42 +422,42 @@
   - restriccion: DEFAULT CURRENT_TIMESTAMP
   - descripcion: fecha y hora de creación del registro
 
-## Individual_product
+## Products
 
-- individual_product_id
+- productId
   - tipo: serial
   - pk: si
-  - descripcion: identificador de los productos individuales
+  - descripcion: identificador único del producto individual
 
-- name
+- productName
   - tipo: varchar(150)
   - pk: no
   - restriccion: NOT NULL
   - descripcion: nombre genérico del producto
 
-- category_product_id
-  - tipo: integer (FK -> Categories_products.category_product_id)
+- categoryId
+  - tipo: integer (FK -> ProductCategories.categoryId)
   - pk: no
   - restriccion: NOT NULL
-  - descripcion: categoría del producto
+  - descripcion: categoría a la que pertenece el producto
 
-- base_unit_measurementUnitId
-  - tipo: integer (FK -> MeasurementUnits.measurementUnitId)
+- baseUnitId
+  - tipo: integer (FK -> MeasurementUnits.unitId)
   - pk: no
   - restriccion: NOT NULL
-  - descripcion: unidad de medida base en la que se vende/empaca el producto individualmente
+  - descripcion: unidad de medida base en la que se vende o empaca el producto individualmente
 
-- unit_volume_m3
-  - tipo: DECIMAL(10, 6)
+- unitVolumeM3
+  - tipo: decimal(10, 6)
   - pk: no
   - descripcion: volumen que ocupa una unidad individual del producto en metros cúbicos
 
-- unit_weight_kg
-  - tipo: DECIMAL(10, 4)
+- unitWeightKg
+  - tipo: decimal(10, 4)
   - pk: no
   - descripcion: peso de una unidad individual del producto en kilogramos
 
-- is_deleted
+- isDeleted
   - tipo: boolean
   - pk: no
   - restriccion: DEFAULT FALSE
@@ -224,32 +475,32 @@
   - restriccion: DEFAULT CURRENT_TIMESTAMP
   - descripcion: fecha y hora de la última modificación
 
-## Characteristics_product
+## ProductCharacteristics
 
-- characteristics_product_id
+- characteristicId
   - tipo: serial
   - pk: si
-  - descripcion: identificador de las características de los productos
+  - descripcion: identificador único de la característica del producto
 
-- individual_product_id
-  - tipo: integer (FK -> Individual_product.individual_product_id)
+- productId
+  - tipo: integer (FK -> Products.productId)
   - pk: no
   - restriccion: NOT NULL
-  - descripcion: referencia al producto individual
+  - descripcion: producto al que pertenece esta característica
 
-- characteristic_type
+- characteristicType
   - tipo: varchar(50)
   - pk: no
   - restriccion: NOT NULL
-  - descripcion: el tipo de característica (ej: aroma, ingrediente, beneficio, textura, color)
+  - descripcion: tipo de característica (ej: aroma, ingrediente, beneficio, textura, color)
 
-- characteristic_value
+- characteristicValue
   - tipo: varchar(100)
   - pk: no
   - restriccion: NOT NULL
-  - descripcion: el valor para el tipo de característica (ej: lavanda, vitamina C, hidratante)
+  - descripcion: valor de la característica (ej: lavanda, vitamina C, hidratante)
 
-- is_deleted
+- isDeleted
   - tipo: boolean
   - pk: no
   - restriccion: DEFAULT FALSE
@@ -261,89 +512,95 @@
   - restriccion: DEFAULT CURRENT_TIMESTAMP
   - descripcion: fecha y hora de creación del registro
 
-## Products_bulk
+## BulkPurchases
 
-- products_bulk_id
+- bulkId
   - tipo: serial
   - pk: si
-  - descripcion: identificador del bulk de los productos
+  - descripcion: identificador único del lote de compra a granel
 
-- individual_product_id
-  - tipo: integer (FK -> Individual_product.individual_product_id)
+- productId
+  - tipo: integer (FK -> Products.productId)
   - pk: no
   - restriccion: NOT NULL
-  - descripcion: productos individuales que componen el bulk
+  - descripcion: producto individual que compone este lote
 
-- supplier_id
-  - tipo: integer (FK -> Suppliers.supplier_id)
+- supplierId
+  - tipo: integer (FK -> Suppliers.supplierId)
   - pk: no
   - restriccion: NOT NULL
-  - descripcion: a quien se le compró el bulk
+  - descripcion: proveedor al que se le compró el lote
 
-- quantity_bulk
-  - tipo: Decimal(10, 3)
+- quantityBulk
+  - tipo: decimal(10, 3)
   - pk: no
-  - restriccion: NOT NULL, CHECK (quantity_bulk > 0)
-  - descripcion: la cantidad granel del producto del bulk
+  - restriccion: NOT NULL, CHECK (quantityBulk > 0)
+  - descripcion: cantidad total del lote en la unidad de medida indicada
 
-- measurementUnitId
-  - tipo: integer (FK -> MeasurementUnits.measurementUnitId)
-  - pk: no
-  - restriccion: NOT NULL
-  - descripcion: la unidad en la que está el granel del producto
-
-- price_bulk
-  - tipo: Decimal(12, 2)
-  - pk: no
-  - restriccion: NOT NULL, CHECK (price_bulk >= 0)
-  - descripcion: precio de un bulk de productos en dólares (USD)
-
-- origin_country_id
-  - tipo: integer (FK -> Countries.country_id)
+- unitId
+  - tipo: integer (FK -> MeasurementUnits.unitId)
   - pk: no
   - restriccion: NOT NULL
-  - descripcion: país de origen de un bulk de productos
+  - descripcion: unidad de medida en la que está expresada la cantidad del lote
 
-- weight_bulk
-  - tipo: Decimal(10, 3)
+- priceBulkUsd
+  - tipo: decimal(12, 2)
   - pk: no
-  - restriccion: CHECK (weight_bulk > 0)
-  - descripcion: el peso total del bulk en kilogramos
+  - restriccion: NOT NULL, CHECK (priceBulkUsd >= 0)
+  - descripcion: precio total del lote en dólares (USD)
 
-- volume_bulk
-  - tipo: DECIMAL(10, 4)
+- originCountryId
+  - tipo: integer (FK -> Countries.countryId)
   - pk: no
-  - restriccion: CHECK (volume_bulk > 0)
-  - descripcion: el volumen que ocupa el bulk en metros cúbicos
+  - restriccion: NOT NULL
+  - descripcion: país de origen de este lote de productos
 
-- arrival_date
-  - tipo: Timestamp
+- weightKg
+  - tipo: decimal(10, 3)
   - pk: no
-  - descripcion: fecha y hora en la que llegó el bulk al HUB de Nicaragua
+  - restriccion: CHECK (weightKg > 0)
+  - descripcion: peso total del lote en kilogramos
+
+- volumeM3
+  - tipo: decimal(10, 4)
+  - pk: no
+  - restriccion: CHECK (volumeM3 > 0)
+  - descripcion: volumen total que ocupa el lote en metros cúbicos
+
+- arrivalDate
+  - tipo: timestamp
+  - pk: no
+  - descripcion: fecha y hora en la que llegó el lote al HUB de Nicaragua
 
 - status
   - tipo: varchar(30)
   - pk: no
   - restriccion: NOT NULL, DEFAULT 'EN_TRANSITO', CHECK (status IN ('EN_TRANSITO', 'RECIBIDO', 'EN_ALMACEN', 'DESPACHADO', 'CANCELADO'))
-  - descripcion: estado actual del bulk en la cadena de suministro
+  - descripcion: estado actual del lote en la cadena de suministro
 
-- import_duty_usd
-  - tipo: Decimal(12, 2)
+- importDutyUsd
+  - tipo: decimal(12, 2)
   - pk: no
   - restriccion: DEFAULT 0.00
   - descripcion: monto pagado en aranceles de importación en dólares (USD)
 
-- freight_cost_usd
-  - tipo: Decimal(12, 2)
+- freightCostUsd
+  - tipo: decimal(12, 2)
   - pk: no
   - restriccion: DEFAULT 0.00
-  - descripcion: costo de flete internacional del bulk en dólares (USD)
+  - descripcion: costo de flete internacional del lote en dólares (USD)
 
-- is_deleted
+- isDeleted
   - tipo: boolean
   - pk: no
   - restriccion: DEFAULT FALSE
-  - descripcion: indica si el registro fue borrado
+  - descripcion: borrado lógico del registro
+
+- createdAt
+  - tipo: timestamp
+  - pk: no
+  - restriccion: DEFAULT CURRENT_TIMESTAMP
+  - descripcion: fecha y hora de creación del registro
 
 - updatedAt
   - tipo: timestamp
@@ -351,59 +608,83 @@
   - restriccion: DEFAULT CURRENT_TIMESTAMP
   - descripcion: fecha y hora de la última modificación
 
+## PermitTypes
+
+- permitTypeId
+  - tipo: serial
+  - pk: si
+  - descripcion: identificador único del tipo de permiso de importación
+
+- permitTypeName
+  - tipo: varchar(80)
+  - pk: no
+  - restriccion: NOT NULL, UNIQUE
+  - descripcion: nombre del tipo de permiso (ej: Sanitario, Fitosanitario, Aduanero, INVIMA)
+
+- permitTypeDescription
+  - tipo: varchar(200)
+  - pk: no
+  - descripcion: descripción del alcance o propósito de este tipo de permiso
+
+- isDeleted
+  - tipo: boolean
+  - pk: no
+  - restriccion: DEFAULT FALSE
+  - descripcion: borrado lógico del registro
+
 - createdAt
   - tipo: timestamp
   - pk: no
   - restriccion: DEFAULT CURRENT_TIMESTAMP
-  - descripcion: fecha y hora en la que se registró el bulk
+  - descripcion: fecha y hora de creación del registro
 
-## Import_permits
+## ImportPermits
 
-- import_permit_id
+- importPermitId
   - tipo: serial
   - pk: si
-  - descripcion: identificador único del permiso de importación
+  - descripcion: identificador único del permiso de importación aplicado a un lote
 
-- products_bulk_id
-  - tipo: integer (FK -> Products_bulk.products_bulk_id)
+- bulkId
+  - tipo: integer (FK -> BulkPurchases.bulkId)
   - pk: no
   - restriccion: NOT NULL
-  - descripcion: bulk al que pertenece el permiso
+  - descripcion: lote al que aplica este permiso
 
-- permit_type
-  - tipo: varchar(80)
+- permitTypeId
+  - tipo: integer (FK -> PermitTypes.permitTypeId)
   - pk: no
   - restriccion: NOT NULL
-  - descripcion: tipo de permiso (ej: sanitario, fitosanitario, aduanero, INVIMA)
+  - descripcion: tipo de permiso aplicado
 
-- permit_number
+- permitNumber
   - tipo: varchar(80)
   - pk: no
   - restriccion: UNIQUE
   - descripcion: número o código oficial del permiso emitido por la entidad reguladora
 
-- issuing_authority
+- issuingAuthority
   - tipo: varchar(150)
   - pk: no
   - descripcion: nombre de la entidad que emitió el permiso
 
-- issue_date
+- issueDate
   - tipo: date
   - pk: no
   - descripcion: fecha de emisión del permiso
 
-- expiry_date
+- expiryDate
   - tipo: date
   - pk: no
   - descripcion: fecha de vencimiento del permiso
 
-- permit_cost_usd
-  - tipo: Decimal(10, 2)
+- permitCostUsd
+  - tipo: decimal(10, 2)
   - pk: no
   - restriccion: DEFAULT 0.00
   - descripcion: costo pagado para obtener el permiso en dólares (USD)
 
-- is_deleted
+- isDeleted
   - tipo: boolean
   - pk: no
   - restriccion: DEFAULT FALSE
@@ -421,104 +702,97 @@
   - restriccion: DEFAULT CURRENT_TIMESTAMP
   - descripcion: fecha y hora de la última modificación
 
-## Inventory_hub
+## InventoryHub
 
-- inventory_hub_id
+- inventoryHubId
   - tipo: serial
   - pk: si
-  - descripcion: identificador del registro de inventario en el HUB de Nicaragua
+  - descripcion: identificador único del movimiento de inventario en el HUB de Nicaragua
 
-- individual_product_id
-  - tipo: integer (FK -> Individual_product.individual_product_id)
+- productId
+  - tipo: integer (FK -> Products.productId)
   - pk: no
   - restriccion: NOT NULL
-  - descripcion: producto individual registrado en inventario
+  - descripcion: producto al que corresponde este movimiento de inventario
 
-- products_bulk_id
-  - tipo: integer (FK -> Products_bulk.products_bulk_id)
+- bulkId
+  - tipo: integer (FK -> BulkPurchases.bulkId)
   - pk: no
   - restriccion: NOT NULL
-  - descripcion: bulk del que provienen las unidades en inventario
+  - descripcion: lote de origen de las unidades registradas en este movimiento
 
-- quantity_available
-  - tipo: Decimal(12, 3)
+- movementType
+  - tipo: varchar(20)
   - pk: no
-  - restriccion: NOT NULL, DEFAULT 0, CHECK (quantity_available >= 0)
-  - descripcion: cantidad de unidades disponibles en el HUB para despacho
+  - restriccion: NOT NULL, CHECK (movementType IN ('ENTRADA', 'SALIDA', 'AJUSTE'))
+  - descripcion: tipo de movimiento de inventario
 
-- quantity_reserved
-  - tipo: Decimal(12, 3)
-  - pk: no
-  - restriccion: DEFAULT 0, CHECK (quantity_reserved >= 0)
-  - descripcion: cantidad de unidades reservadas para órdenes pendientes de Dynamic Brands
-
-- cost_per_unit_usd
-  - tipo: Decimal(12, 4)
+- quantity
+  - tipo: decimal(12, 3)
   - pk: no
   - restriccion: NOT NULL
-  - descripcion: costo unitario calculado del producto en USD (incluye flete y aranceles prorrateados)
+  - descripcion: cantidad de unidades del movimiento. Positiva para entradas, negativa para salidas o ajustes de descuento
 
-- last_restock_date
-  - tipo: timestamp
+- costPerUnitUsd
+  - tipo: decimal(12, 4)
   - pk: no
-  - descripcion: fecha y hora del último reabastecimiento de este producto
+  - restriccion: NOT NULL
+  - descripcion: costo unitario del producto en USD al momento del movimiento (incluye flete y aranceles prorrateados)
 
-- is_deleted
-  - tipo: boolean
-  - pk: no
-  - restriccion: DEFAULT FALSE
-  - descripcion: borrado lógico del registro
-
-- updatedAt
-  - tipo: timestamp
-  - pk: no
-  - restriccion: DEFAULT CURRENT_TIMESTAMP
-  - descripcion: fecha y hora de la última modificación
-
-- createdAt
-  - tipo: timestamp
-  - pk: no
-  - restriccion: DEFAULT CURRENT_TIMESTAMP
-  - descripcion: fecha y hora de creación del registro
-
-## Dispatch_orders
-
-- dispatch_order_id
-  - tipo: serial
-  - pk: si
-  - descripcion: identificador de la orden de despacho generada por una solicitud de Dynamic Brands
-
-- dynamic_brands_order_id
+- referenceId
   - tipo: integer
   - pk: no
-  - restriccion: NOT NULL
-  - descripcion: ID de la orden originada en Dynamic Brands (llave foránea lógica para poder integrar la base de datos de dynamic brands)
+  - descripcion: ID del documento que origina el movimiento (ej: dispatch_order_id en salidas, bulk_id en entradas)
 
-- individual_product_id
-  - tipo: integer (FK -> Individual_product.individual_product_id)
+- notes
+  - tipo: varchar(200)
+  - pk: no
+  - descripcion: observaciones adicionales sobre el movimiento (ej: ajuste por conteo físico)
+
+- isDeleted
+  - tipo: boolean
+  - pk: no
+  - restriccion: DEFAULT FALSE
+  - descripcion: borrado lógico del registro
+
+- createdAt
+  - tipo: timestamp
+  - pk: no
+  - restriccion: DEFAULT CURRENT_TIMESTAMP
+  - descripcion: fecha y hora en que se registró el movimiento
+
+## DispatchOrders
+
+- dispatchOrderId
+  - tipo: serial
+  - pk: si
+  - descripcion: identificador único de la orden de despacho generada por solicitud de Dynamic Brands
+
+- externalOrderNumber
+  - tipo: varchar(60)
+  - pk: no
+  - restriccion: UNIQUE
+  - descripcion: número de orden legible para referencia cruzada con Dynamic Brands (no es la PK del otro sistema)
+
+- productId
+  - tipo: integer (FK -> Products.productId)
   - pk: no
   - restriccion: NOT NULL
   - descripcion: producto individual a despachar
 
-- inventory_hub_id
-  - tipo: integer (FK -> Inventory_hub.inventory_hub_id)
+- quantityDispatched
+  - tipo: decimal(12, 3)
   - pk: no
-  - restriccion: NOT NULL
-  - descripcion: registro de inventario del que se descuenta el despacho
+  - restriccion: NOT NULL, CHECK (quantityDispatched > 0)
+  - descripcion: cantidad de unidades despachadas hacia el país de destino
 
-- quantity_dispatched
-  - tipo: Decimal(12, 3)
-  - pk: no
-  - restriccion: NOT NULL, CHECK (quantity_dispatched > 0)
-  - descripcion: cantidad de unidades despachadas al HUB de etiquetado
-
-- dispatch_date
+- dispatchDate
   - tipo: timestamp
   - pk: no
   - descripcion: fecha y hora en que se ejecutó el despacho
 
-- destination_country_id
-  - tipo: integer (FK -> Countries.country_id)
+- destinationCountryId
+  - tipo: integer (FK -> Countries.countryId)
   - pk: no
   - restriccion: NOT NULL
   - descripcion: país destino final del despacho
@@ -529,13 +803,13 @@
   - restriccion: NOT NULL, DEFAULT 'PENDIENTE', CHECK (status IN ('PENDIENTE', 'EN_ETIQUETADO', 'LISTO_COURIER', 'ENTREGADO_COURIER', 'CANCELADO'))
   - descripcion: estado actual de la orden de despacho
 
-- unit_cost_usd
-  - tipo: Decimal(12, 4)
+- unitCostUsd
+  - tipo: decimal(12, 4)
   - pk: no
   - restriccion: NOT NULL
-  - descripcion: costo unitario del producto al momento del despacho en USD (snapshot para trazabilidad)
+  - descripcion: costo unitario del producto en USD al momento del despacho (snapshot para trazabilidad)
 
-- is_deleted
+- isDeleted
   - tipo: boolean
   - pk: no
   - restriccion: DEFAULT FALSE
@@ -553,32 +827,26 @@
   - restriccion: DEFAULT CURRENT_TIMESTAMP
   - descripcion: fecha y hora de la última modificación
 
-## Exchange_rates
+## ExchangeRates
 
-- exchange_rate_id
+- exchangeRateId
   - tipo: serial
   - pk: si
-  - descripcion: identificador del registro de tipo de cambio
+  - descripcion: identificador único del registro de tipo de cambio
 
-- country_id
-  - tipo: integer (FK -> Countries.country_id)
+- currencyId
+  - tipo: integer (FK -> Currencies.currencyId)
   - pk: no
   - restriccion: NOT NULL
-  - descripcion: país cuya moneda local se está registrando
+  - descripcion: moneda local cuya tasa se está registrando
 
-- currency_code
-  - tipo: char(3)
+- rateToUsd
+  - tipo: decimal(18, 6)
   - pk: no
-  - restriccion: NOT NULL
-  - descripcion: código ISO 4217 de la moneda (ej: CRC, NIO, USD)
+  - restriccion: NOT NULL, CHECK (rateToUsd > 0)
+  - descripcion: tasa de conversión de la moneda local a USD (1 unidad de moneda local = X USD)
 
-- rate_to_usd
-  - tipo: Decimal(18, 6)
-  - pk: no
-  - restriccion: NOT NULL, CHECK (rate_to_usd > 0)
-  - descripcion: tasa de conversión de la moneda local a USD (1 moneda local = X USD)
-
-- rate_date
+- rateDate
   - tipo: date
   - pk: no
   - restriccion: NOT NULL
@@ -587,7 +855,7 @@
 - source
   - tipo: varchar(100)
   - pk: no
-  - descripcion: fuente de la tasa (ej: Banco Central)
+  - descripcion: fuente de la tasa (ej: Banco Central de Nicaragua)
 
 - createdAt
   - tipo: timestamp
@@ -595,54 +863,60 @@
   - restriccion: DEFAULT CURRENT_TIMESTAMP
   - descripcion: fecha y hora de creación del registro
 
-## Process_log
+## ProcessLog
 
-- log_id
+- logId
   - tipo: bigserial
   - pk: si
   - descripcion: identificador único del evento de log
 
-- sp_name
-  - tipo: varchar(100)
+- eventSource
+  - tipo: varchar(150)
   - pk: no
   - restriccion: NOT NULL
-  - descripcion: nombre del stored procedure que generó el log
+  - descripcion: origen del evento registrado (ej: nombre del trigger, función, job o módulo de aplicación)
 
-- action_description
-  - tipo: varchar(255)
+- eventType
+  - tipo: varchar(60)
   - pk: no
   - restriccion: NOT NULL
-  - descripcion: descripción detallada del paso ejecutado o el error ocurrido
+  - descripcion: categoría o tipo de operación registrada (ej: INSERT, UPDATE, DISPATCH, SYNC)
 
-- affected_table
+- affectedTable
   - tipo: varchar(100)
   - pk: no
   - descripcion: tabla afectada por la operación registrada
 
-- affected_record_id
-  - tipo: integer
+- affectedRecordId
+  - tipo: bigint
   - pk: no
   - descripcion: ID del registro afectado en la tabla destino
+
+- description
+  - tipo: text
+  - pk: no
+  - restriccion: NOT NULL
+  - descripcion: descripción detallada del evento ocurrido o del error capturado
 
 - status
   - tipo: varchar(20)
   - pk: no
   - restriccion: NOT NULL, CHECK (status IN ('INFO', 'SUCCESS', 'WARNING', 'ERROR'))
-  - descripcion: nivel del evento registrado
+  - descripcion: nivel de severidad del evento registrado
 
-- error_detail
+- errorDetail
   - tipo: text
   - pk: no
-  - descripcion: detalle técnico del error capturado en el bloque EXCEPTION (SQLERRM)
+  - descripcion: detalle técnico del error (SQLERRM, stack trace u otro contexto de fallo)
 
-- executed_at
+- executedAt
   - tipo: timestamp
   - pk: no
   - restriccion: DEFAULT CURRENT_TIMESTAMP
-  - descripcion: fecha y hora exacta en que se ejecutó el paso registrado
+  - descripcion: fecha y hora exacta en que ocurrió el evento
 
-- session_user_pg
+- dbUser
   - tipo: varchar(100)
   - pk: no
   - restriccion: DEFAULT current_user
-  - descripcion: usuario de base de datos que ejecutó el SP
+  - descripcion: usuario de base de datos que originó el evento
