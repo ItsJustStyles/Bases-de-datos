@@ -172,6 +172,21 @@ CREATE TABLE Products (
 
 -- ------------------------------------------------------------
 
+-- [NUEVO] Precios de venta de Etheria a Dynamic Brands por producto.
+--         Soporta historial de precios mediante validFrom / validTo.
+CREATE TABLE ProductPrices (
+    productPriceId  SERIAL          PRIMARY KEY,
+    productId       INTEGER         NOT NULL
+        REFERENCES Products(productId),
+    salePriceUsd    DECIMAL(12, 4)  NOT NULL
+        CHECK (salePriceUsd > 0),
+    validFrom       DATE            NOT NULL,
+    validTo         DATE,
+    createdAt       TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- ------------------------------------------------------------
+
 CREATE TABLE ProductCharacteristics (
     characteristicId    SERIAL      PRIMARY KEY,
     productId           INTEGER     NOT NULL
@@ -245,29 +260,12 @@ CREATE TABLE ImportPermits (
 );
 
 -- ============================================================
---  7. INVENTARIO HUB (NICARAGUA)
+--  7. ÓRDENES DE DESPACHO
+--     (declarada antes de InventoryHub por la FK que ésta necesita)
 -- ============================================================
 
-CREATE TABLE InventoryHub (
-    inventoryHubId  SERIAL          PRIMARY KEY,
-    productId       INTEGER         NOT NULL
-        REFERENCES Products(productId),
-    bulkId          INTEGER         NOT NULL
-        REFERENCES BulkPurchases(bulkId),
-    movementType    VARCHAR(20)     NOT NULL
-        CHECK (movementType IN ('ENTRADA', 'SALIDA', 'AJUSTE')),
-    quantity        DECIMAL(12, 3)  NOT NULL,
-    costPerUnitUsd  DECIMAL(12, 4)  NOT NULL,
-    referenceId     INTEGER,
-    notes           VARCHAR(200),
-    isDeleted       BOOLEAN         NOT NULL DEFAULT FALSE,
-    createdAt       TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-
--- ============================================================
---  8. ÓRDENES DE DESPACHO
--- ============================================================
-
+-- [NOTA DE ORDEN] DispatchOrders se declara antes de InventoryHub
+--                 porque InventoryHub referencia dispatchOrderId.
 CREATE TABLE DispatchOrders (
     dispatchOrderId     SERIAL          PRIMARY KEY,
     externalOrderNumber VARCHAR(60)     UNIQUE,
@@ -283,6 +281,46 @@ CREATE TABLE DispatchOrders (
     unitCostUsd         DECIMAL(12, 4)  NOT NULL,
     isDeleted           BOOLEAN         NOT NULL DEFAULT FALSE,
     createdAt           TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updatedAt           TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- ============================================================
+--  8. INVENTARIO HUB (NICARAGUA)
+-- ============================================================
+
+-- [CAMBIO] Se reemplazó referenceId INTEGER genérico (sin FK ni tipo
+--          definido) por dispatchOrderId con FK explícita a DispatchOrders.
+--          Es NULL para movimientos de ENTRADA y AJUSTE.
+CREATE TABLE InventoryHub (
+    inventoryHubId  SERIAL          PRIMARY KEY,
+    productId       INTEGER         NOT NULL
+        REFERENCES Products(productId),
+    bulkId          INTEGER         NOT NULL
+        REFERENCES BulkPurchases(bulkId),
+    movementType    VARCHAR(20)     NOT NULL
+        CHECK (movementType IN ('ENTRADA', 'SALIDA', 'AJUSTE')),
+    quantity        DECIMAL(12, 3)  NOT NULL,
+    costPerUnitUsd  DECIMAL(12, 4)  NOT NULL,
+    dispatchOrderId INTEGER
+        REFERENCES DispatchOrders(dispatchOrderId),
+    notes           VARCHAR(200),
+    isDeleted       BOOLEAN         NOT NULL DEFAULT FALSE,
+    createdAt       TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- ------------------------------------------------------------
+
+-- [NUEVO] Stock actual consolidado por producto en el HUB.
+--         Evita recalcular el saldo sumando todos los movimientos.
+--         Se actualiza con cada INSERT en InventoryHub (vía trigger).
+CREATE TABLE InventoryStock (
+    inventoryStockId    SERIAL          PRIMARY KEY,
+    productId           INTEGER         NOT NULL UNIQUE
+        REFERENCES Products(productId),
+    stockQuantity       DECIMAL(12, 3)  NOT NULL DEFAULT 0
+        CHECK (stockQuantity >= 0),
+    lastMovementId      INTEGER
+        REFERENCES InventoryHub(inventoryHubId),
     updatedAt           TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -337,6 +375,8 @@ CREATE INDEX idx_suppliers_contact        ON Suppliers(primaryContactId);
 -- Productos
 CREATE INDEX idx_products_category        ON Products(categoryId);
 CREATE INDEX idx_products_unit            ON Products(baseUnitId);
+CREATE INDEX idx_productprices_product    ON ProductPrices(productId);
+CREATE INDEX idx_productprices_validfrom  ON ProductPrices(validFrom);
 CREATE INDEX idx_productchar_product      ON ProductCharacteristics(productId);
 
 -- Compras / inventario
@@ -347,6 +387,8 @@ CREATE INDEX idx_importpermits_bulk       ON ImportPermits(bulkId);
 CREATE INDEX idx_inventoryhub_product     ON InventoryHub(productId);
 CREATE INDEX idx_inventoryhub_bulk        ON InventoryHub(bulkId);
 CREATE INDEX idx_inventoryhub_movement    ON InventoryHub(movementType);
+CREATE INDEX idx_inventoryhub_dispatch    ON InventoryHub(dispatchOrderId);
+CREATE INDEX idx_inventorystock_product   ON InventoryStock(productId);
 
 -- Despachos
 CREATE INDEX idx_dispatchorders_product   ON DispatchOrders(productId);

@@ -475,6 +475,42 @@
   - restriccion: DEFAULT CURRENT_TIMESTAMP
   - descripcion: fecha y hora de la última modificación
 
+## ProductPrices
+
+- productPriceId
+  - tipo: serial
+  - pk: si
+  - descripcion: identificador único del registro de precio de venta del producto a Dynamic Brands
+
+- productId
+  - tipo: integer (FK -> Products.productId)
+  - pk: no
+  - restriccion: NOT NULL
+  - descripcion: producto al que aplica este precio de venta
+
+- salePriceUsd
+  - tipo: decimal(12, 4)
+  - pk: no
+  - restriccion: NOT NULL, CHECK (salePriceUsd > 0)
+  - descripcion: precio de venta unitario del producto en USD cobrado a Dynamic Brands
+
+- validFrom
+  - tipo: date
+  - pk: no
+  - restriccion: NOT NULL
+  - descripcion: fecha desde la que aplica este precio
+
+- validTo
+  - tipo: date
+  - pk: no
+  - descripcion: fecha hasta la que aplica este precio (NULL si es el precio vigente)
+
+- createdAt
+  - tipo: timestamp
+  - pk: no
+  - restriccion: DEFAULT CURRENT_TIMESTAMP
+  - descripcion: fecha y hora de creación del registro
+
 ## ProductCharacteristics
 
 - characteristicId
@@ -739,10 +775,10 @@
   - restriccion: NOT NULL
   - descripcion: costo unitario del producto en USD al momento del movimiento (incluye flete y aranceles prorrateados)
 
-- referenceId
-  - tipo: integer
+- dispatchOrderId
+  - tipo: integer (FK -> DispatchOrders.dispatchOrderId)
   - pk: no
-  - descripcion: ID del documento que origina el movimiento (ej: dispatch_order_id en salidas, bulk_id en entradas)
+  - descripcion: orden de despacho que origina el movimiento de salida (NULL para entradas y ajustes)
 
 - notes
   - tipo: varchar(200)
@@ -760,6 +796,36 @@
   - pk: no
   - restriccion: DEFAULT CURRENT_TIMESTAMP
   - descripcion: fecha y hora en que se registró el movimiento
+
+## InventoryStock
+
+- inventoryStockId
+  - tipo: serial
+  - pk: si
+  - descripcion: identificador único del registro de stock actual por producto en el HUB
+
+- productId
+  - tipo: integer (FK -> Products.productId)
+  - pk: no
+  - restriccion: NOT NULL, UNIQUE
+  - descripcion: producto cuyo stock se está registrando
+
+- stockQuantity
+  - tipo: decimal(12, 3)
+  - pk: no
+  - restriccion: NOT NULL, DEFAULT 0, CHECK (stockQuantity >= 0)
+  - descripcion: cantidad actual disponible en el HUB en la unidad de medida base del producto
+
+- lastMovementId
+  - tipo: integer (FK -> InventoryHub.inventoryHubId)
+  - pk: no
+  - descripcion: último movimiento de inventario que actualizó este registro
+
+- updatedAt
+  - tipo: timestamp
+  - pk: no
+  - restriccion: DEFAULT CURRENT_TIMESTAMP
+  - descripcion: fecha y hora de la última actualización del stock
 
 ## DispatchOrders
 

@@ -394,6 +394,12 @@
   - restriccion: NOT NULL
   - descripcion: marca blanca bajo la que se vende este producto
 
+- websiteId
+  - tipo: INT UNSIGNED (FK -> Websites.websiteId)
+  - pk: no
+  - restriccion: NOT NULL
+  - descripcion: sitio web al que pertenece este producto de catálogo
+
 - brandedName
   - tipo: VARCHAR(150)
   - pk: no
@@ -469,12 +475,6 @@
   - restriccion: DEFAULT 0
   - descripcion: indica si el producto es destacado en el sitio
 
-- stockDisplay
-  - tipo: INT UNSIGNED
-  - pk: no
-  - restriccion: DEFAULT 0
-  - descripcion: unidades disponibles a mostrar al comprador (sincronizado desde Etheria)
-
 - isActive
   - tipo: TINYINT(1)
   - pk: no
@@ -540,6 +540,36 @@
   - pk: no
   - restriccion: DEFAULT CURRENT_TIMESTAMP
   - descripcion: fecha y hora de creación del registro
+
+## InventoryDisplay
+
+- inventoryDisplayId
+  - tipo: INT UNSIGNED AUTO_INCREMENT
+  - pk: si
+  - descripcion: identificador único del registro de inventario visible por sitio y producto
+
+- websiteProductId
+  - tipo: INT UNSIGNED (FK -> WebsiteProducts.websiteProductId)
+  - pk: no
+  - restriccion: NOT NULL, UNIQUE
+  - descripcion: producto publicado en el sitio al que corresponde este inventario
+
+- stockDisplay
+  - tipo: INT UNSIGNED
+  - pk: no
+  - restriccion: NOT NULL, DEFAULT 0
+  - descripcion: unidades disponibles a mostrar al comprador (sincronizado desde Etheria)
+
+- lastSyncedAt
+  - tipo: TIMESTAMP
+  - pk: no
+  - descripcion: fecha y hora de la última sincronización con Etheria Global
+
+- updatedAt
+  - tipo: TIMESTAMP
+  - pk: no
+  - restriccion: DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  - descripcion: fecha y hora de la última modificación del registro
 
 ## Customers
 
@@ -877,6 +907,18 @@
   - pk: no
   - restriccion: NOT NULL
   - descripcion: moneda en la que está expresado el costo del envío
+
+- exchangeRateId
+  - tipo: INT UNSIGNED (FK -> ExchangeRates.exchangeRateId)
+  - pk: no
+  - restriccion: NOT NULL
+  - descripcion: tipo de cambio vigente al momento de registrar el costo del envío
+
+- exchangeRateSnapshot
+  - tipo: DECIMAL(18, 6)
+  - pk: no
+  - restriccion: NOT NULL
+  - descripcion: valor exacto del tipo de cambio al momento del registro (snapshot para trazabilidad)
 
 - estimatedDeliveryDate
   - tipo: DATE

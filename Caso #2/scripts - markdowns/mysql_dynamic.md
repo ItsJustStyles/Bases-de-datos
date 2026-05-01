@@ -148,10 +148,14 @@ CREATE TABLE Websites (
 --  4. CATÁLOGO DE PRODUCTOS
 -- ============================================================
 
+-- [CAMBIO] Se agregó websiteId con FK a Websites.
+--          El catálogo ahora tiene relación formal con el sitio
+--          al que pertenece cada producto, además de la marca.
 CREATE TABLE ProductCatalog (
     catalogProductId    INT UNSIGNED    NOT NULL AUTO_INCREMENT,
     etheriaProductId    INT UNSIGNED    NOT NULL,
     brandId             INT UNSIGNED    NOT NULL,
+    websiteId           INT UNSIGNED    NOT NULL,
     brandedName         VARCHAR(150)    NOT NULL,
     brandedDescription  TEXT            NULL DEFAULT NULL,
     brandedImageUrl     VARCHAR(500)    NULL DEFAULT NULL,
@@ -163,17 +167,20 @@ CREATE TABLE ProductCatalog (
     updatedAt           TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (catalogProductId),
     CONSTRAINT fk_productcatalog_brand
-        FOREIGN KEY (brandId) REFERENCES Brands(brandId)
+        FOREIGN KEY (brandId) REFERENCES Brands(brandId),
+    CONSTRAINT fk_productcatalog_website
+        FOREIGN KEY (websiteId) REFERENCES Websites(websiteId)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ------------------------------------------------------------
 
+-- [CAMBIO] Se eliminó el campo stockDisplay de esta tabla.
+--          El inventario visible se gestiona ahora en InventoryDisplay.
 CREATE TABLE WebsiteProducts (
     websiteProductId    INT UNSIGNED    NOT NULL AUTO_INCREMENT,
     websiteId           INT UNSIGNED    NOT NULL,
     catalogProductId    INT UNSIGNED    NOT NULL,
     isFeatured          TINYINT(1)      NOT NULL DEFAULT 0,
-    stockDisplay        INT UNSIGNED    NOT NULL DEFAULT 0,
     isActive            TINYINT(1)      NOT NULL DEFAULT 1,
     isDeleted           TINYINT(1)      NOT NULL DEFAULT 0,
     createdAt           TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -201,6 +208,23 @@ CREATE TABLE WebsiteProductPrices (
         FOREIGN KEY (websiteProductId) REFERENCES WebsiteProducts(websiteProductId),
     CONSTRAINT fk_prices_currency
         FOREIGN KEY (currencyId) REFERENCES Currencies(currencyId)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ------------------------------------------------------------
+
+-- [NUEVO] Tabla de inventario visible por producto/sitio.
+--         Reemplaza el campo stockDisplay que estaba en WebsiteProducts.
+--         Agrega trazabilidad de la última sincronización con Etheria.
+CREATE TABLE InventoryDisplay (
+    inventoryDisplayId  INT UNSIGNED    NOT NULL AUTO_INCREMENT,
+    websiteProductId    INT UNSIGNED    NOT NULL,
+    stockDisplay        INT UNSIGNED    NOT NULL DEFAULT 0,
+    lastSyncedAt        TIMESTAMP       NULL DEFAULT NULL,
+    updatedAt           TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (inventoryDisplayId),
+    UNIQUE KEY uq_inventorydisplay_product (websiteProductId),
+    CONSTRAINT fk_inventorydisplay_websiteproduct
+        FOREIGN KEY (websiteProductId) REFERENCES WebsiteProducts(websiteProductId)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================================
@@ -335,6 +359,9 @@ CREATE TABLE Couriers (
 
 -- ------------------------------------------------------------
 
+-- [CAMBIO] Se agregaron exchangeRateId (FK) y exchangeRateSnapshot.
+--          El costo del envío tiene moneda local, por lo que requiere
+--          el tipo de cambio vigente y su snapshot para trazabilidad.
 CREATE TABLE ShippingRecords (
     shippingId              INT UNSIGNED    NOT NULL AUTO_INCREMENT,
     orderId                 INT UNSIGNED    NOT NULL,
@@ -342,6 +369,8 @@ CREATE TABLE ShippingRecords (
     trackingCode            VARCHAR(100)    NULL DEFAULT NULL,
     shippingCostLocal       DECIMAL(12, 2)  NOT NULL DEFAULT 0.00,
     currencyId              INT UNSIGNED    NOT NULL,
+    exchangeRateId          INT UNSIGNED    NOT NULL,
+    exchangeRateSnapshot    DECIMAL(18, 6)  NOT NULL,
     estimatedDeliveryDate   DATE            NULL DEFAULT NULL,
     actualDeliveryDate      DATE            NULL DEFAULT NULL,
     status                  VARCHAR(30)     NOT NULL DEFAULT 'PENDIENTE',
@@ -363,6 +392,8 @@ CREATE TABLE ShippingRecords (
         FOREIGN KEY (courierId) REFERENCES Couriers(courierId),
     CONSTRAINT fk_shipping_currency
         FOREIGN KEY (currencyId) REFERENCES Currencies(currencyId),
+    CONSTRAINT fk_shipping_exchangerate
+        FOREIGN KEY (exchangeRateId) REFERENCES ExchangeRates(exchangeRateId),
     CONSTRAINT fk_shipping_destcountry
         FOREIGN KEY (destinationCountryId) REFERENCES Countries(countryId)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -372,16 +403,16 @@ CREATE TABLE ShippingRecords (
 -- ============================================================
 
 CREATE TABLE ProcessLog (
-    logId           BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    eventSource     VARCHAR(150)    NOT NULL,
-    eventType       VARCHAR(60)     NOT NULL,
-    affectedTable   VARCHAR(100)    NULL DEFAULT NULL,
+    logId            BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    eventSource      VARCHAR(150)    NOT NULL,
+    eventType        VARCHAR(60)     NOT NULL,
+    affectedTable    VARCHAR(100)    NULL DEFAULT NULL,
     affectedRecordId BIGINT UNSIGNED NULL DEFAULT NULL,
-    description     TEXT            NOT NULL,
-    status          VARCHAR(20)     NOT NULL,
-    errorDetail     TEXT            NULL DEFAULT NULL,
-    executedAt      TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    dbUser          VARCHAR(100)    NOT NULL DEFAULT (CURRENT_USER()),
+    description      TEXT            NOT NULL,
+    status           VARCHAR(20)     NOT NULL,
+    errorDetail      TEXT            NULL DEFAULT NULL,
+    executedAt       TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    dbUser           VARCHAR(100)    NOT NULL DEFAULT (CURRENT_USER()),
     PRIMARY KEY (logId),
     CONSTRAINT chk_processlog_status CHECK (status IN ('INFO', 'SUCCESS', 'WARNING', 'ERROR'))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -408,11 +439,15 @@ CREATE INDEX idx_websites_country          ON Websites(countryId);
 
 -- Catálogo
 CREATE INDEX idx_productcatalog_brand      ON ProductCatalog(brandId);
+CREATE INDEX idx_productcatalog_website    ON ProductCatalog(websiteId);
 CREATE INDEX idx_productcatalog_etheria    ON ProductCatalog(etheriaProductId);
 CREATE INDEX idx_websiteproducts_website   ON WebsiteProducts(websiteId);
 CREATE INDEX idx_websiteproducts_catalog   ON WebsiteProducts(catalogProductId);
 CREATE INDEX idx_prices_websiteproduct     ON WebsiteProductPrices(websiteProductId);
 CREATE INDEX idx_prices_validfrom          ON WebsiteProductPrices(validFrom);
+
+-- Inventario display
+CREATE INDEX idx_inventorydisplay_synced   ON InventoryDisplay(lastSyncedAt);
 
 -- Clientes
 CREATE INDEX idx_customers_country         ON Customers(countryId);
@@ -431,6 +466,7 @@ CREATE INDEX idx_orderitems_product        ON OrderItems(websiteProductId);
 CREATE INDEX idx_shipping_courier          ON ShippingRecords(courierId);
 CREATE INDEX idx_shipping_status           ON ShippingRecords(status);
 CREATE INDEX idx_shipping_destcountry      ON ShippingRecords(destinationCountryId);
+CREATE INDEX idx_shipping_exchangerate     ON ShippingRecords(exchangeRateId);
 
 -- Log
 CREATE INDEX idx_processlog_status         ON ProcessLog(status);
