@@ -53,6 +53,8 @@ services:
       POSTGRES_DB: warehouse
     ports:
       - "6001:5432"
+    volumes:
+      - ./data_warehouse/init_warehouse.sql:/docker-entrypoint-initdb.d/init.sql
     networks:
       - holding_network
     healthcheck:
@@ -70,6 +72,8 @@ services:
       - POSTGRES_USER=airflow
       - POSTGRES_PASSWORD=airflow
       - POSTGRES_DB=airflow
+    volumes:
+      - ./airflow_db_data:/var/lib/postgresql/data
     networks:
       - holding_network
 
