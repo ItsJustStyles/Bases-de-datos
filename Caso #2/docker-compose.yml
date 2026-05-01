@@ -1,6 +1,5 @@
-version: '3.8'
-
 services:
+  # --- FUENTES DE DATOS ---
   db:
     image: postgres:latest
     container_name: etheria_db
@@ -15,12 +14,12 @@ services:
       - ./postgres_etheria/init_etheria.sql:/docker-entrypoint-initdb.d/init.sql
     networks:
       - holding_network
-    # Verifica que Postgres esté listo para recibir consultas
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U etheria -d etheria_global_db"]
-      interval: 5s
+      interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 10 # Aumentamos a 100 segundos de espera total
+      start_period: 20s # Le damos 20s de gracia antes de empezar a juzgarlo
 
   dynamic_db:
     image: mysql:8.0
@@ -37,13 +36,91 @@ services:
       - ./mysql_dynamic/init_dynamic.sql:/docker-entrypoint-initdb.d/init.sql
     networks:
       - holding_network
-    # Verifica que MySQL esté listo para recibir consultas
     healthcheck:
       test: ["CMD-SHELL", "mysqladmin ping -h localhost -u dynamic --password=brands123"]
-      interval: 5s
+      interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 10
+      start_period: 20s
 
+  # --- DATA WAREHOUSE ---
+  data_warehouse:
+    image: postgres:latest
+    container_name: dwh_central
+    environment:
+      POSTGRES_USER: analytics_user
+      POSTGRES_PASSWORD: dwh_password
+      POSTGRES_DB: warehouse
+    ports:
+      - "6001:5432"
+    networks:
+      - holding_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U analytics_user -d warehouse"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  # --- ORQUESTACIÓN (AIRFLOW) ---
+  airflow_db:
+    image: postgres:13
+    container_name: airflow_postgres
+    environment:
+      - POSTGRES_USER=airflow
+      - POSTGRES_PASSWORD=airflow
+      - POSTGRES_DB=airflow
+    networks:
+      - holding_network
+
+  airflow_init:
+    image: apache/airflow:2.7.0
+    depends_on:
+      - airflow_db
+    environment:
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@airflow_db/airflow
+    # IMPORTANTE: Aquí creamos el usuario para que puedas entrar
+    command: >
+      bash -c "airflow db init && 
+      airflow users create --username admin --firstname Justin --lastname Lacayo --role Admin --email admin@example.com --password admin"
+    networks:
+      - holding_network
+
+  airflow_webserver:
+    image: apache/airflow:2.7.0
+    container_name: airflow_webserver
+    command: webserver
+    depends_on:
+      airflow_init:
+        condition: service_completed_successfully
+    environment:
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@airflow_db/airflow
+      - AIRFLOW__CORE__EXECUTOR=LocalExecutor
+      - _PIP_ADDITIONAL_DEPENDENCIES=pandas sqlalchemy psycopg2-binary mysql-connector-python
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./dags:/opt/airflow/dags
+    networks:
+      - holding_network
+
+  airflow_scheduler:
+    image: apache/airflow:2.7.0
+    container_name: airflow_scheduler
+    command: scheduler
+    depends_on:
+      airflow_init:
+        condition: service_completed_successfully
+    environment:
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@airflow_db/airflow
+      - AIRFLOW__CORE__EXECUTOR=LocalExecutor
+      - _PIP_ADDITIONAL_DEPENDENCIES=pandas sqlalchemy psycopg2-binary mysql-connector-python
+    volumes:
+      - ./dags:/opt/airflow/dags
+    networks:
+      - holding_network
+
+  # --- VISUALIZACIÓN ---
   metabase:
     image: metabase/metabase:latest
     container_name: metabase_etheria
@@ -57,22 +134,7 @@ services:
     networks:
       - holding_network
     depends_on:
-      db:
-        condition: service_healthy
-      dynamic_db:
-        condition: service_healthy
-
-  # Servicio de ETL Automatizado
-  etl_process:
-    build:
-      context: ./script etl  # Ruta a la carpeta que contiene el Dockerfile y ETL.py
-    container_name: etl_worker
-    networks:
-      - holding_network
-    depends_on:
-      db:
-        condition: service_healthy
-      dynamic_db:
+      data_warehouse:
         condition: service_healthy
 
 networks:
