@@ -172,6 +172,21 @@ CREATE TABLE Products (
 
 -- ------------------------------------------------------------
 
+-- [NUEVO] Precios de venta de Etheria a Dynamic Brands por producto.
+--         Soporta historial de precios mediante validFrom / validTo.
+CREATE TABLE ProductPrices (
+    productPriceId  SERIAL          PRIMARY KEY,
+    productId       INTEGER         NOT NULL
+        REFERENCES Products(productId),
+    salePriceUsd    DECIMAL(12, 4)  NOT NULL
+        CHECK (salePriceUsd > 0),
+    validFrom       DATE            NOT NULL,
+    validTo         DATE,
+    createdAt       TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- ------------------------------------------------------------
+
 CREATE TABLE ProductCharacteristics (
     characteristicId    SERIAL      PRIMARY KEY,
     productId           INTEGER     NOT NULL
@@ -245,29 +260,12 @@ CREATE TABLE ImportPermits (
 );
 
 -- ============================================================
---  7. INVENTARIO HUB (NICARAGUA)
+--  7. ÓRDENES DE DESPACHO
+--     (declarada antes de InventoryHub por la FK que ésta necesita)
 -- ============================================================
 
-CREATE TABLE InventoryHub (
-    inventoryHubId  SERIAL          PRIMARY KEY,
-    productId       INTEGER         NOT NULL
-        REFERENCES Products(productId),
-    bulkId          INTEGER         NOT NULL
-        REFERENCES BulkPurchases(bulkId),
-    movementType    VARCHAR(20)     NOT NULL
-        CHECK (movementType IN ('ENTRADA', 'SALIDA', 'AJUSTE')),
-    quantity        DECIMAL(12, 3)  NOT NULL,
-    costPerUnitUsd  DECIMAL(12, 4)  NOT NULL,
-    referenceId     INTEGER,
-    notes           VARCHAR(200),
-    isDeleted       BOOLEAN         NOT NULL DEFAULT FALSE,
-    createdAt       TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-
--- ============================================================
---  8. ÓRDENES DE DESPACHO
--- ============================================================
-
+-- [NOTA DE ORDEN] DispatchOrders se declara antes de InventoryHub
+--                 porque InventoryHub referencia dispatchOrderId.
 CREATE TABLE DispatchOrders (
     dispatchOrderId     SERIAL          PRIMARY KEY,
     externalOrderNumber VARCHAR(60)     UNIQUE,
@@ -283,6 +281,46 @@ CREATE TABLE DispatchOrders (
     unitCostUsd         DECIMAL(12, 4)  NOT NULL,
     isDeleted           BOOLEAN         NOT NULL DEFAULT FALSE,
     createdAt           TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updatedAt           TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- ============================================================
+--  8. INVENTARIO HUB (NICARAGUA)
+-- ============================================================
+
+-- [CAMBIO] Se reemplazó referenceId INTEGER genérico (sin FK ni tipo
+--          definido) por dispatchOrderId con FK explícita a DispatchOrders.
+--          Es NULL para movimientos de ENTRADA y AJUSTE.
+CREATE TABLE InventoryHub (
+    inventoryHubId  SERIAL          PRIMARY KEY,
+    productId       INTEGER         NOT NULL
+        REFERENCES Products(productId),
+    bulkId          INTEGER         NOT NULL
+        REFERENCES BulkPurchases(bulkId),
+    movementType    VARCHAR(20)     NOT NULL
+        CHECK (movementType IN ('ENTRADA', 'SALIDA', 'AJUSTE')),
+    quantity        DECIMAL(12, 3)  NOT NULL,
+    costPerUnitUsd  DECIMAL(12, 4)  NOT NULL,
+    dispatchOrderId INTEGER
+        REFERENCES DispatchOrders(dispatchOrderId),
+    notes           VARCHAR(200),
+    isDeleted       BOOLEAN         NOT NULL DEFAULT FALSE,
+    createdAt       TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- ------------------------------------------------------------
+
+-- [NUEVO] Stock actual consolidado por producto en el HUB.
+--         Evita recalcular el saldo sumando todos los movimientos.
+--         Se actualiza con cada INSERT en InventoryHub (vía trigger).
+CREATE TABLE InventoryStock (
+    inventoryStockId    SERIAL          PRIMARY KEY,
+    productId           INTEGER         NOT NULL UNIQUE
+        REFERENCES Products(productId),
+    stockQuantity       DECIMAL(12, 3)  NOT NULL DEFAULT 0
+        CHECK (stockQuantity >= 0),
+    lastMovementId      INTEGER
+        REFERENCES InventoryHub(inventoryHubId),
     updatedAt           TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -337,6 +375,8 @@ CREATE INDEX idx_suppliers_contact        ON Suppliers(primaryContactId);
 -- Productos
 CREATE INDEX idx_products_category        ON Products(categoryId);
 CREATE INDEX idx_products_unit            ON Products(baseUnitId);
+CREATE INDEX idx_productprices_product    ON ProductPrices(productId);
+CREATE INDEX idx_productprices_validfrom  ON ProductPrices(validFrom);
 CREATE INDEX idx_productchar_product      ON ProductCharacteristics(productId);
 
 -- Compras / inventario
@@ -347,6 +387,8 @@ CREATE INDEX idx_importpermits_bulk       ON ImportPermits(bulkId);
 CREATE INDEX idx_inventoryhub_product     ON InventoryHub(productId);
 CREATE INDEX idx_inventoryhub_bulk        ON InventoryHub(bulkId);
 CREATE INDEX idx_inventoryhub_movement    ON InventoryHub(movementType);
+CREATE INDEX idx_inventoryhub_dispatch    ON InventoryHub(dispatchOrderId);
+CREATE INDEX idx_inventorystock_product   ON InventoryStock(productId);
 
 -- Despachos
 CREATE INDEX idx_dispatchorders_product   ON DispatchOrders(productId);
@@ -359,169 +401,3 @@ CREATE INDEX idx_exchangerates_date       ON ExchangeRates(rateDate);
 CREATE INDEX idx_processlog_status        ON ProcessLog(status);
 CREATE INDEX idx_processlog_source        ON ProcessLog(eventSource);
 CREATE INDEX idx_processlog_table         ON ProcessLog(affectedTable);
-
--- LLenado de las tablas:
-
--- ============================================================
--- SCRIPT DE POBLACIÓN DE DATOS - ETHERIA GLOBAL DB
--- ============================================================
-
-DO $$
-DECLARE
-    -- Variables para IDs
-    v_person_id INT;
-    v_admin_id INT;
-    v_city_id INT;
-    v_address_id INT;
-    v_prod_id INT;
-    v_bulk_id INT;
-    -- Variables de cálculo
-    v_qty DECIMAL;
-    v_price DECIMAL;
-    r_cat RECORD;
-    r_prod RECORD;
-BEGIN
-    RAISE NOTICE 'Iniciando carga de datos...';
-
-    -- 1. GEOGRAFÍA BÁSICA
-    INSERT INTO GeographicRegions (regionName) VALUES 
-    ('Centroamérica'), ('Asia del Sur'), ('Norte de África'), ('Europa Occidental'), ('Amazonía')
-    ON CONFLICT (regionName) DO NOTHING;
-
-    INSERT INTO Countries (countryName, isoCode) VALUES 
-    ('Costa Rica', 'CRI'), ('Nicaragua', 'NIC'), ('India', 'IND'), 
-    ('Marruecos', 'MAR'), ('Egipto', 'EGY'), ('Brasil', 'BRA'),
-    ('Francia', 'FRA'), ('Madagascar', 'MDG')
-    ON CONFLICT DO NOTHING;
-
-    INSERT INTO CountryRegions (countryId, geographicRegionId)
-    SELECT countryId, (SELECT geographicRegionId FROM GeographicRegions WHERE regionName = 'Centroamérica')
-    FROM Countries WHERE isoCode IN ('CRI', 'NIC');
-
-    -- 2. MONEDAS Y TIPOS DE CAMBIO
-    INSERT INTO Currencies (currencyCode, currencySymbol, currencyName, countryId) VALUES 
-    ('CRC', '₡', 'Colón Costarricense', (SELECT countryId FROM Countries WHERE isoCode = 'CRI')),
-    ('NIO', 'C$', 'Córdoba Nicaragüense', (SELECT countryId FROM Countries WHERE isoCode = 'NIC')),
-    ('INR', '₹', 'Rupia India', (SELECT countryId FROM Countries WHERE isoCode = 'IND')),
-    ('MAD', 'dh', 'Dírham Marroquí', (SELECT countryId FROM Countries WHERE isoCode = 'MAR'))
-    ON CONFLICT DO NOTHING;
-
-    INSERT INTO ExchangeRates (currencyId, rateToUsd, rateDate, source)
-    SELECT currencyId, 0.0019, CURRENT_DATE, 'BCCR' FROM Currencies WHERE currencyCode = 'CRC';
-    
-    INSERT INTO ExchangeRates (currencyId, rateToUsd, rateDate, source)
-    SELECT currencyId, 0.027, CURRENT_DATE, 'BCN' FROM Currencies WHERE currencyCode = 'NIO';
-
-    -- 3. PRODUCTOS Y UNIDADES
-    INSERT INTO MeasurementUnits (unitName) VALUES 
-    ('Litros'), ('Kilogramos'), ('Gramos'), ('Unidades'), ('Mililitros')
-    ON CONFLICT DO NOTHING;
-
-    INSERT INTO ProductCategories (categoryName, categoryDescription) VALUES 
-    ('Aromaterapia', 'Aceites esenciales y difusores'),
-    ('Cosmética Capilar', 'Tratamientos naturales para el cabello'),
-    ('Cuidado Dermatológico', 'Cremas y ungüentos medicinales exóticos'),
-    ('Suplementos Alimenticios', 'Bebidas y polvos curativos')
-    ON CONFLICT DO NOTHING;
-
-    -- Generar Productos por cada categoría
-    FOR r_cat IN (SELECT categoryId, categoryName FROM ProductCategories) LOOP
-        FOR i IN 1..3 LOOP
-            INSERT INTO Products (productName, categoryId, baseUnitId, unitVolumeM3, unitWeightKg)
-            VALUES (
-                'Extracto de ' || r_cat.categoryName || ' Premium ' || i, 
-                r_cat.categoryId, 
-                (SELECT unitId FROM MeasurementUnits ORDER BY random() LIMIT 1),
-                (random() * 0.05)::DECIMAL(10,6),
-                (random() * 1.5)::DECIMAL(10,4)
-            ) RETURNING productId INTO v_prod_id;
-
-            INSERT INTO ProductCharacteristics (productId, characteristicType, characteristicValue)
-            VALUES (v_prod_id, 'Certificación', 'Orgánico USDA');
-        END LOOP;
-    END LOOP;
-
-    -- 4. PERSONAS, DIRECCIONES Y PROVEEDORES
-    -- Crear región para el HUB en Nicaragua
-    INSERT INTO AdminRegions (countryId, regionName) 
-    VALUES ((SELECT countryId FROM Countries WHERE isoCode = 'NIC'), 'Costa Caribe Norte') 
-    RETURNING adminRegionId INTO v_admin_id;
-
-    INSERT INTO Cities (adminRegionId, cityName) VALUES (v_admin_id, 'Puerto Cabezas') 
-    RETURNING cityId INTO v_city_id;
-
-    INSERT INTO Addresses (cityId, addressLine1, postalCode) 
-    VALUES (v_city_id, 'Muelle Municipal 200m Norte', '70000') 
-    RETURNING addressId INTO v_address_id;
-
-    -- Proveedores y Contactos
-    INSERT INTO Persons (firstName, lastName, email, phone) 
-    VALUES ('Rajesh', 'Sharma', 'contact@himalayan.in', '+91 98765 43210')
-    RETURNING personId INTO v_person_id;
-
-    INSERT INTO Suppliers (supplierName, primaryContactId, countryId, addressId) VALUES 
-    ('Himalayan Botanics Ltd', v_person_id, (SELECT countryId FROM Countries WHERE isoCode = 'IND'), v_address_id),
-    ('Atlas Oasis S.A.', v_person_id, (SELECT countryId FROM Countries WHERE isoCode = 'MAR'), v_address_id)
-    ON CONFLICT DO NOTHING;
-
-    -- 5. PERMISOS
-    INSERT INTO PermitTypes (permitTypeName, permitTypeDescription) VALUES 
-    ('Sanitario', 'Permiso de consumo humano'),
-    ('Fitonutricional', 'Certificación botánica'),
-    ('Ambiental', 'Extracción sostenible')
-    ON CONFLICT DO NOTHING;
-
-    -- 6. IMPORTACIONES (BULK PURCHASES) E INVENTARIO
-    FOR i IN 1..20 LOOP
-        SELECT productId INTO r_prod FROM Products ORDER BY random() LIMIT 1;
-        v_qty := (random() * 450 + 50);
-        v_price := (random() * 2000 + 150);
-
-        INSERT INTO BulkPurchases (
-            productId, supplierId, quantityBulk, unitId, priceBulkUsd, 
-            originCountryId, weightKg, volumeM3, arrivalDate, status, 
-            importDutyUsd, freightCostUsd
-        )
-        VALUES (
-            r_prod.productId, 
-            (SELECT supplierId FROM Suppliers ORDER BY random() LIMIT 1), 
-            v_qty, 
-            (SELECT unitId FROM MeasurementUnits ORDER BY random() LIMIT 1),
-            v_price, 
-            (SELECT countryId FROM Countries ORDER BY random() LIMIT 1),
-            (v_qty * 0.4), 
-            (v_qty * 0.008), 
-            NOW() - (random() * interval '45 days'),
-            (ARRAY['EN_TRANSITO', 'RECIBIDO', 'EN_ALMACEN'])[floor(random()*3)+1],
-            v_price * 0.12,
-            v_price * 0.05
-        ) RETURNING bulkId INTO v_bulk_id;
-
-        -- Llenar Inventario HUB para las recibidas
-        INSERT INTO InventoryHub (productId, bulkId, movementType, quantity, costPerUnitUsd, notes)
-        VALUES (r_prod.productId, v_bulk_id, 'ENTRADA', v_qty, (v_price / v_qty), 'Carga masiva inicial');
-    END LOOP;
-
-    -- 7. DESPACHOS (ÓRDENES DE SALIDA)
-    FOR i IN 1..12 LOOP
-        INSERT INTO DispatchOrders (
-            externalOrderNumber, productId, quantityDispatched, dispatchDate, 
-            destinationCountryId, status, unitCostUsd
-        )
-        VALUES (
-            'EXP-' || 2000 + i,
-            (SELECT productId FROM Products ORDER BY random() LIMIT 1),
-            (random() * 15 + 2),
-            NOW() - (random() * interval '7 days'),
-            (SELECT countryId FROM Countries WHERE isoCode = 'CRI'),
-            (ARRAY['PENDIENTE', 'LISTO_COURIER', 'ENTREGADO_COURIER'])[floor(random()*3)+1],
-            (random() * 60 + 15)
-        );
-    END LOOP;
-
-    -- 8. LOG FINAL
-    INSERT INTO ProcessLog (eventSource, eventType, description, status)
-    VALUES ('System Initializer', 'SEEDING', 'Carga masiva de datos de holding completada exitosamente', 'SUCCESS');
-
-    RAISE NOTICE 'Carga completada. Revisa Metabase en localhost:3000';
-END $$;
