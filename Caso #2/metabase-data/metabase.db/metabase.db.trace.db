@@ -4291,3 +4291,4 @@ org.h2.jdbc.JdbcSQLNonTransientConnectionException: Database is already closed (
 	at org.quartz.impl.jdbcjobstore.JobStoreSupport.releaseAcquiredTrigger(JobStoreSupport.java:2940)
 	at org.quartz.core.QuartzSchedulerThread.releaseIfScheduleChangedSignificantly(QuartzSchedulerThread.java:472)
 	at org.quartz.core.QuartzSchedulerThread.run(QuartzSchedulerThread.java:333)
+2026-05-02 15:18:56 jdbc[6]: exception
