@@ -11,7 +11,8 @@ services:
     ports:
       - "5433:5432"
     volumes:
-      - ./postgres_etheria/init_etheria.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./postgres_etheria/init_etheria.sql:/docker-entrypoint-initdb.d/01_init.sql
+      - ./postgres_etheria/stored_procedured_etheria.sql:/docker-entrypoint-initdb.d/02_init.sql
     networks:
       - holding_network
     healthcheck:
@@ -22,7 +23,7 @@ services:
       start_period: 20s # Le damos 20s de gracia antes de empezar a juzgarlo
 
   dynamic_db:
-    image: mysql:8.0
+    image: mysql:8.4
     container_name: dynamic_mysql
     restart: always
     environment:
@@ -33,7 +34,8 @@ services:
     ports:
       - "3307:3306"
     volumes:
-      - ./mysql_dynamic/init_dynamic.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./mysql_dynamic/init_dynamic.sql:/docker-entrypoint-initdb.d/01_init.sql
+      - ./mysql_dynamic/stored_procedured_dynamic.sql:/docker-entrypoint-initdb.d/02_init.sql
     networks:
       - holding_network
     healthcheck:

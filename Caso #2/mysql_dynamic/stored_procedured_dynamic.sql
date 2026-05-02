@@ -21,6 +21,9 @@
 
 USE dynamic_brands_db;
 
+SET NAMES 'utf8mb4' COLLATE 'utf8mb4_0900_ai_ci';
+SET CHARACTER SET utf8mb4;
+
 DELIMITER $$
 
 -- ============================================================
@@ -28,7 +31,7 @@ DELIMITER $$
 --  Inserta un registro en ProcessLog.
 --  Usado internamente por todos los demás SPs.
 -- ============================================================
-CREATE OR REPLACE PROCEDURE sp_log_event(
+CREATE PROCEDURE sp_log_event(
     IN p_eventSource        VARCHAR(150),
     IN p_eventType          VARCHAR(60),
     IN p_affectedTable      VARCHAR(100),
@@ -53,7 +56,7 @@ END$$
 --  isoCode es la clave de upsert (mismo código que usa Etheria).
 --  Ejemplo: 'Costa Rica', 'CRI' | 'Nicaragua', 'NIC' | 'México', 'MEX'
 -- ============================================================
-CREATE OR REPLACE PROCEDURE sp_upsert_country(
+CREATE PROCEDURE sp_upsert_country(
     IN  p_countryName   VARCHAR(100),
     IN  p_isoCode       CHAR(3),
     IN  p_isActive      TINYINT(1),
@@ -73,7 +76,7 @@ BEGIN
 
     SELECT countryId INTO v_existing
       FROM Countries
-     WHERE isoCode = p_isoCode AND isDeleted = 0
+     WHERE isoCode COLLATE utf8mb4_0900_ai_ci = p_isoCode COLLATE utf8mb4_0900_ai_ci AND isDeleted = 0
      LIMIT 1;
 
     IF v_existing IS NULL THEN
@@ -97,7 +100,7 @@ END$$
 --  2. sp_upsert_region
 --  Crea o recupera una región administrativa dentro de un país.
 -- ============================================================
-CREATE OR REPLACE PROCEDURE sp_upsert_region(
+CREATE PROCEDURE sp_upsert_region(
     IN  p_countryId     INT UNSIGNED,
     IN  p_regionName    VARCHAR(100),
     OUT p_regionId      INT UNSIGNED
@@ -115,7 +118,7 @@ BEGIN
 
     SELECT regionId INTO v_existing
       FROM Regions
-     WHERE countryId = p_countryId AND regionName = p_regionName AND isDeleted = 0
+     WHERE countryId = p_countryId AND regionName COLLATE utf8mb4_0900_ai_ci = p_regionName COLLATE utf8mb4_0900_ai_ci AND isDeleted = 0
      LIMIT 1;
 
     IF v_existing IS NULL THEN
@@ -135,7 +138,7 @@ END$$
 --  3. sp_upsert_city
 --  Crea o recupera una ciudad dentro de una región.
 -- ============================================================
-CREATE OR REPLACE PROCEDURE sp_upsert_city(
+CREATE PROCEDURE sp_upsert_city(
     IN  p_regionId  INT UNSIGNED,
     IN  p_cityName  VARCHAR(100),
     OUT p_cityId    INT UNSIGNED
@@ -153,7 +156,7 @@ BEGIN
 
     SELECT cityId INTO v_existing
       FROM Cities
-     WHERE regionId = p_regionId AND cityName = p_cityName AND isDeleted = 0
+     WHERE regionId = p_regionId AND cityName COLLATE utf8mb4_0900_ai_ci = p_cityName COLLATE utf8mb4_0900_ai_ci AND isDeleted = 0
      LIMIT 1;
 
     IF v_existing IS NULL THEN
@@ -174,7 +177,7 @@ END$$
 --  Inserta una dirección física. Siempre crea un registro nuevo
 --  (las direcciones no se actualizan; se crean versiones nuevas).
 -- ============================================================
-CREATE OR REPLACE PROCEDURE sp_insert_address(
+CREATE PROCEDURE sp_insert_address(
     IN  p_cityId        INT UNSIGNED,
     IN  p_addressLine1  VARCHAR(200),
     IN  p_addressLine2  VARCHAR(200),
@@ -204,7 +207,7 @@ END$$
 --  Coherencia con Etheria: currencyCode es la clave compartida
 --  (CRC, USD, NIO, MXN, COP, etc.)
 -- ============================================================
-CREATE OR REPLACE PROCEDURE sp_upsert_currency(
+CREATE PROCEDURE sp_upsert_currency(
     IN  p_currencyCode      CHAR(3),
     IN  p_currencySymbol    VARCHAR(5),
     IN  p_currencyName      VARCHAR(80),
@@ -224,7 +227,7 @@ BEGIN
 
     SELECT currencyId INTO v_existing
       FROM Currencies
-     WHERE currencyCode = p_currencyCode AND isDeleted = 0
+     WHERE currencyCode COLLATE utf8mb4_0900_ai_ci = p_currencyCode COLLATE utf8mb4_0900_ai_ci AND isDeleted = 0
      LIMIT 1;
 
     IF v_existing IS NULL THEN
@@ -250,7 +253,7 @@ END$$
 --  Crea o actualiza la tasa impositiva de un país para un período.
 --  La clave de upsert es (countryId, validFrom).
 -- ============================================================
-CREATE OR REPLACE PROCEDURE sp_upsert_country_tax(
+CREATE PROCEDURE sp_upsert_country_tax(
     IN  p_countryId         INT UNSIGNED,
     IN  p_taxRatePercent    DECIMAL(5,2),
     IN  p_regulatoryNotes   TEXT,
@@ -296,7 +299,7 @@ END$$
 --  7. sp_upsert_brand
 --  Crea o actualiza una marca white-label.
 -- ============================================================
-CREATE OR REPLACE PROCEDURE sp_upsert_brand(
+CREATE PROCEDURE sp_upsert_brand(
     IN  p_brandName     VARCHAR(150),
     IN  p_brandFocus    VARCHAR(100),
     IN  p_isActive      TINYINT(1),
@@ -315,7 +318,7 @@ BEGIN
 
     SELECT brandId INTO v_existing
       FROM Brands
-     WHERE brandName = p_brandName AND isDeleted = 0
+     WHERE brandName COLLATE utf8mb4_0900_ai_ci = p_brandName COLLATE utf8mb4_0900_ai_ci AND isDeleted = 0
      LIMIT 1;
 
     IF v_existing IS NULL THEN
@@ -340,7 +343,7 @@ END$$
 --  Crea o actualiza un sitio web de una marca en un país.
 --  La URL es la clave de upsert.
 -- ============================================================
-CREATE OR REPLACE PROCEDURE sp_upsert_website(
+CREATE PROCEDURE sp_upsert_website(
     IN  p_brandId           INT UNSIGNED,
     IN  p_countryId         INT UNSIGNED,
     IN  p_siteUrl           VARCHAR(500),
@@ -393,7 +396,7 @@ END$$
 --  de Etheria para una marca y sitio específicos.
 --  IMPORTANTE: p_etheriaProductId debe existir en Etheria.Products
 -- ============================================================
-CREATE OR REPLACE PROCEDURE sp_upsert_product_catalog(
+CREATE PROCEDURE sp_upsert_product_catalog(
     IN  p_etheriaProductId      INT UNSIGNED,
     IN  p_brandId               INT UNSIGNED,
     IN  p_websiteId             INT UNSIGNED,
@@ -457,7 +460,7 @@ END$$
 --  Vincula un producto del catálogo a un sitio web.
 --  Al crear, también inicializa su registro en InventoryDisplay.
 -- ============================================================
-CREATE OR REPLACE PROCEDURE sp_upsert_website_product(
+CREATE PROCEDURE sp_upsert_website_product(
     IN  p_websiteId             INT UNSIGNED,
     IN  p_catalogProductId      INT UNSIGNED,
     IN  p_isFeatured            TINYINT(1),
@@ -513,7 +516,7 @@ END$$
 --  Cierra el precio activo anterior y establece uno nuevo.
 --  Garantiza que siempre exista un único precio abierto por producto.
 -- ============================================================
-CREATE OR REPLACE PROCEDURE sp_set_website_product_price(
+CREATE PROCEDURE sp_set_website_product_price(
     IN  p_websiteProductId  INT UNSIGNED,
     IN  p_salePriceLocal    DECIMAL(14,2),
     IN  p_currencyId        INT UNSIGNED,
@@ -560,7 +563,7 @@ END$$
 --  Llamado por el proceso de sincronización con Etheria
 --  (InventoryStock.stockQuantity → InventoryDisplay.stockDisplay).
 -- ============================================================
-CREATE OR REPLACE PROCEDURE sp_sync_inventory_display(
+CREATE PROCEDURE sp_sync_inventory_display(
     IN  p_websiteProductId      INT UNSIGNED,
     IN  p_stockDisplay          INT UNSIGNED,
     OUT p_inventoryDisplayId    INT UNSIGNED
@@ -597,7 +600,7 @@ END$$
 --  13. sp_register_customer
 --  Registra un nuevo cliente. El email es único; lanza error si ya existe.
 -- ============================================================
-CREATE OR REPLACE PROCEDURE sp_register_customer(
+CREATE PROCEDURE sp_register_customer(
     IN  p_firstName     VARCHAR(80),
     IN  p_lastName      VARCHAR(80),
     IN  p_email         VARCHAR(150),
@@ -640,7 +643,7 @@ END$$
 --  Asocia una dirección a un cliente.
 --  Si isDefault = 1, quita el flag predeterminado de las demás.
 -- ============================================================
-CREATE OR REPLACE PROCEDURE sp_add_customer_address(
+CREATE PROCEDURE sp_add_customer_address(
     IN  p_customerId        INT UNSIGNED,
     IN  p_addressId         INT UNSIGNED,
     IN  p_alias             VARCHAR(60),
@@ -679,7 +682,7 @@ END$$
 --  Crea o actualiza el tipo de cambio de una moneda para una fecha.
 --  Los snapshots guardados en Orders/ShippingRecords usan este valor.
 -- ============================================================
-CREATE OR REPLACE PROCEDURE sp_upsert_exchange_rate(
+CREATE PROCEDURE sp_upsert_exchange_rate(
     IN  p_currencyId        INT UNSIGNED,
     IN  p_rateToUsd         DECIMAL(18,6),
     IN  p_rateDate          DATE,
@@ -731,7 +734,7 @@ END$$
 --    [{"websiteProductId": N, "quantity": N, "unitPriceLocal": N.NN}, ...]
 --  El total USD se calcula aplicando el snapshot del tipo de cambio.
 -- ============================================================
-CREATE OR REPLACE PROCEDURE sp_place_order(
+CREATE PROCEDURE sp_place_order(
     IN  p_customerId            INT UNSIGNED,
     IN  p_websiteId             INT UNSIGNED,
     IN  p_customerAddressId     INT UNSIGNED,
@@ -824,7 +827,7 @@ END$$
 --  17. sp_cancel_order
 --  Cancela una orden que aún no haya sido enviada o entregada.
 -- ============================================================
-CREATE OR REPLACE PROCEDURE sp_cancel_order(
+CREATE PROCEDURE sp_cancel_order(
     IN p_orderId    INT UNSIGNED,
     IN p_reason     TEXT
 )
@@ -870,7 +873,7 @@ END$$
 --  Actualiza el estado de una orden y, opcionalmente, vincula
 --  el ID de la orden de despacho de Etheria.
 -- ============================================================
-CREATE OR REPLACE PROCEDURE sp_update_order_status(
+CREATE PROCEDURE sp_update_order_status(
     IN p_orderId                    INT UNSIGNED,
     IN p_newStatus                  VARCHAR(30),
     IN p_etheriaDispatchOrderId     INT UNSIGNED
@@ -907,7 +910,7 @@ END$$
 --  19. sp_register_courier
 --  Crea o actualiza un courier/transportista.
 -- ============================================================
-CREATE OR REPLACE PROCEDURE sp_register_courier(
+CREATE PROCEDURE sp_register_courier(
     IN  p_courierName           VARCHAR(100),
     IN  p_contactEmail          VARCHAR(150),
     IN  p_contactPhone          VARCHAR(30),
@@ -956,7 +959,7 @@ END$$
 --  Captura el snapshot del tipo de cambio y actualiza la orden
 --  a estado EN_PREPARACION si estaba en CONFIRMADA.
 -- ============================================================
-CREATE OR REPLACE PROCEDURE sp_create_shipping_record(
+CREATE PROCEDURE sp_create_shipping_record(
     IN  p_orderId                   INT UNSIGNED,
     IN  p_courierId                 INT UNSIGNED,
     IN  p_trackingCode              VARCHAR(100),
@@ -1027,7 +1030,7 @@ END$$
 --  Si el envío queda ENTREGADO    → Orden pasa a ENTREGADA
 --  Si el envío queda FALLIDO      → Orden pasa a CANCELADA
 -- ============================================================
-CREATE OR REPLACE PROCEDURE sp_update_shipping_status(
+CREATE PROCEDURE sp_update_shipping_status(
     IN p_shippingId             INT UNSIGNED,
     IN p_newStatus              VARCHAR(30),
     IN p_actualDeliveryDate     DATE
@@ -1079,3 +1082,248 @@ DELIMITER ;
 -- ============================================================
 --  FIN DEL ARCHIVO — sp_dynamic_brands.sql
 -- ============================================================
+
+-- LLenado de tablas:
+
+-- ============================================================
+--  POBLACIÓN INICIAL (Datos idénticos a Etheria Global)
+--  Se utilizan los mismos datos del archivo de Etheria:
+--  11 Países, 15 Regiones/AdminRegions, 15 Ciudades, 15 Direcciones,
+--  11 Monedas, y 100 Productos (etheriaProductId 1-100).
+-- ============================================================
+
+-- 1. PAISES (11 países idénticos a Etheria)
+CALL sp_upsert_country('Costa Rica',      'CRI', 1, @country_cr);
+CALL sp_upsert_country('Estados Unidos',  'USA', 1, @country_us);
+CALL sp_upsert_country('Panamá',          'PAN', 1, @country_pa);
+CALL sp_upsert_country('España',          'ESP', 1, @country_es);
+CALL sp_upsert_country('Colombia',        'COL', 1, @country_co);
+CALL sp_upsert_country('México',          'MEX', 1, @country_mx);
+CALL sp_upsert_country('Alemania',        'DEU', 1, @country_de);
+CALL sp_upsert_country('Francia',         'FRA', 1, @country_fr);
+CALL sp_upsert_country('Japón',           'JPN', 1, @country_jp);
+CALL sp_upsert_country('Brasil',          'BRA', 1, @country_br);
+CALL sp_upsert_country('Nicaragua',       'NIC', 1, @country_ni);
+
+-- 2. MONEDAS (11 monedas idénticas a Etheria)
+CALL sp_upsert_currency('NIO', 'C$',  'Córdoba',               @country_ni, @curr_nio);
+CALL sp_upsert_currency('USD', '$',   'Dólar Estadounidense',  @country_us, @curr_usd);
+CALL sp_upsert_currency('CRC', '₡',   'Colón Costarricense',   @country_cr, @curr_crc);
+CALL sp_upsert_currency('PAB', 'B/.', 'Balboa',                @country_pa, @curr_pab);
+CALL sp_upsert_currency('COP', '$',   'Peso Colombiano',       @country_co, @curr_cop);
+CALL sp_upsert_currency('MXN', '$',   'Peso Mexicano',         @country_mx, @curr_mxn);
+CALL sp_upsert_currency('BRL', 'R$',  'Real Brasileño',        @country_br, @curr_brl);
+-- El Euro se inserta una vez (la lógica de upsert actualizará el país dueño al último)
+CALL sp_upsert_currency('EUR', '€',   'Euro', @country_es, @curr_eur);
+CALL sp_upsert_currency('EUR', '€',   'Euro', @country_fr, @curr_eur);
+CALL sp_upsert_currency('EUR', '€',   'Euro', @country_de, @curr_eur);
+CALL sp_upsert_currency('JPY', '¥',   'Yen Japonés',           @country_jp, @curr_jpy);
+
+-- 3. REGIONES (15 AdminRegions de Etheria mapeadas a Regions en Dynamic)
+CALL sp_upsert_region(@country_ni, 'Costa Caribe Sur',  @reg_ni_1);
+CALL sp_upsert_region(@country_ni, 'Managua',           @reg_ni_2);
+CALL sp_upsert_region(@country_cr, 'San José',          @reg_cr_1);
+CALL sp_upsert_region(@country_cr, 'Cartago',           @reg_cr_2);
+CALL sp_upsert_region(@country_pa, 'Panamá',            @reg_pa_1);
+CALL sp_upsert_region(@country_mx, 'Ciudad de México',  @reg_mx_1);
+CALL sp_upsert_region(@country_mx, 'Jalisco',           @reg_mx_2);
+CALL sp_upsert_region(@country_co, 'Bogotá D.C.',       @reg_co_1);
+CALL sp_upsert_region(@country_co, 'Antioquia',         @reg_co_2);
+CALL sp_upsert_region(@country_br, 'São Paulo',         @reg_br_1);
+CALL sp_upsert_region(@country_us, 'Florida',           @reg_us_1);
+CALL sp_upsert_region(@country_es, 'Madrid',            @reg_es_1);
+CALL sp_upsert_region(@country_fr, 'Île-de-France',     @reg_fr_1);
+CALL sp_upsert_region(@country_de, 'Baviera',           @reg_de_1);
+CALL sp_upsert_region(@country_jp, 'Tokio',             @reg_jp_1);
+
+-- 4. CIUDADES (15 ciudades idénticas a Etheria)
+CALL sp_upsert_city(@reg_ni_1, 'Bluefields',        @city_ni_1);
+CALL sp_upsert_city(@reg_ni_2, 'Managua',           @city_ni_2);
+CALL sp_upsert_city(@reg_cr_1, 'Escazú',            @city_cr_1);
+CALL sp_upsert_city(@reg_cr_2, 'Paraíso',           @city_cr_2);
+CALL sp_upsert_city(@reg_pa_1, 'Ciudad de Panamá',  @city_pa_1);
+CALL sp_upsert_city(@reg_mx_1, 'Polanco',           @city_mx_1);
+CALL sp_upsert_city(@reg_mx_2, 'Guadalajara',       @city_mx_2);
+CALL sp_upsert_city(@reg_co_1, 'Bogotá',            @city_co_1);
+CALL sp_upsert_city(@reg_co_2, 'Medellín',          @city_co_2);
+CALL sp_upsert_city(@reg_br_1, 'Campinas',          @city_br_1);
+CALL sp_upsert_city(@reg_us_1, 'Miami',             @city_us_1);
+CALL sp_upsert_city(@reg_es_1, 'Madrid',            @city_es_1);
+CALL sp_upsert_city(@reg_fr_1, 'París',             @city_fr_1);
+CALL sp_upsert_city(@reg_de_1, 'Múnich',            @city_de_1);
+CALL sp_upsert_city(@reg_jp_1, 'Shibuya',           @city_jp_1);
+
+-- 5. DIRECCIONES (15 direcciones idénticas a Etheria)
+CALL sp_insert_address(@city_ni_1, 'Zona Portuaria, Muelle Municipal',    'HUB Logístico Etheria',        '82100',   @addr_ni_1);
+CALL sp_insert_address(@city_ni_2, 'Plaza España, 200m Sur',              'Oficinas Administrativas',     '11001',   @addr_ni_2);
+CALL sp_insert_address(@city_cr_1, 'Multiplaza Escazú, Local 45',         'Showroom Dynamic',             '10201',   @addr_cr_1);
+CALL sp_insert_address(@city_cr_2, 'Calle Principal, frente al Parque',   'Centro de Distribución Local', '30201',   @addr_cr_2);
+CALL sp_insert_address(@city_pa_1, 'Costa del Este, Business Park',       'Torre B, Piso 10',             '0801',    @addr_pa_1);
+CALL sp_insert_address(@city_mx_1, 'Av. Presidente Masaryk 123',          'Boutique de Lujo',             '11550',   @addr_mx_1);
+CALL sp_insert_address(@city_mx_2, 'Puerta de Hierro',                    'Edificio Corporativo',         '45116',   @addr_mx_2);
+CALL sp_insert_address(@city_co_1, 'Carrera 7 # 71-21',                   'Torre Financiera',             '110221',  @addr_co_1);
+CALL sp_insert_address(@city_co_2, 'El Poblado, Carrera 43A',             'Milla de Oro',                 '050021',  @addr_co_2);
+CALL sp_insert_address(@city_br_1, 'Av. Guilherme Campos, 500',           'Parque Dom Pedro',             '13087',   @addr_br_1);
+CALL sp_insert_address(@city_us_1, 'Port of Miami, Terminal G',           'Warehouse de Exportación',     '33132',   @addr_us_1);
+CALL sp_insert_address(@city_es_1, 'Calle de Velázquez 50',               'Sourcing Office',              '28001',   @addr_es_1);
+CALL sp_insert_address(@city_fr_1, 'Rue du Faubourg Saint-Honoré',        'Cosmética Premium',            '75008',   @addr_fr_1);
+CALL sp_insert_address(@city_de_1, 'Marienplatz 1',                       'Aceites Esenciales Bulk',      '80331',   @addr_de_1);
+CALL sp_insert_address(@city_jp_1, '2-24-12 Shibuya',                     'Scramble Square',              '150-6101',@addr_jp_1);
+
+-- 6. TIPOS DE CAMBIO (Snapshot 1 USD = X)
+CALL sp_upsert_exchange_rate(@curr_nio, 0.0278,  '2026-05-01', 'BCN',                @rate_nio);
+CALL sp_upsert_exchange_rate(@curr_usd, 1.0,     '2026-05-01', 'FED',                @rate_usd);
+CALL sp_upsert_exchange_rate(@curr_crc, 0.002,   '2026-05-01', 'BCCR',               @rate_crc);
+CALL sp_upsert_exchange_rate(@curr_pab, 1.0,     '2026-05-01', 'Banco Nacional',     @rate_pab);
+CALL sp_upsert_exchange_rate(@curr_cop, 0.00025, '2026-05-01', 'Banco de la República', @rate_cop);
+CALL sp_upsert_exchange_rate(@curr_mxn, 0.0588,  '2026-05-01', 'Banxico',            @rate_mxn);
+CALL sp_upsert_exchange_rate(@curr_brl, 0.20,    '2026-05-01', 'BCB',                @rate_brl);
+CALL sp_upsert_exchange_rate(@curr_eur, 1.08,    '2026-05-01', 'BCE',                @rate_eur);
+CALL sp_upsert_exchange_rate(@curr_jpy, 0.0067,  '2026-05-01', 'BoJ',               @rate_jpy);
+
+-- 7. IMPUESTOS POR PAÍS
+CALL sp_upsert_country_tax(@country_ni, 15.00, 'IVA Nicaragua',     '2026-01-01', NULL, @tax_ni);
+CALL sp_upsert_country_tax(@country_us,  0.00, 'No federal VAT',    '2026-01-01', NULL, @tax_us);
+CALL sp_upsert_country_tax(@country_pa,  7.00, 'ITBMS Panamá',      '2026-01-01', NULL, @tax_pa);
+CALL sp_upsert_country_tax(@country_es, 21.00, 'IVA España',        '2026-01-01', NULL, @tax_es);
+CALL sp_upsert_country_tax(@country_co, 19.00, 'IVA Colombia',      '2026-01-01', NULL, @tax_co);
+CALL sp_upsert_country_tax(@country_mx, 16.00, 'IVA México',        '2026-01-01', NULL, @tax_mx);
+CALL sp_upsert_country_tax(@country_br, 17.00, 'ICMS Brasil',       '2026-01-01', NULL, @tax_br);
+CALL sp_upsert_country_tax(@country_fr, 20.00, 'TVA Francia',       '2026-01-01', NULL, @tax_fr);
+CALL sp_upsert_country_tax(@country_de, 19.00, 'IVA Alemania',      '2026-01-01', NULL, @tax_de);
+CALL sp_upsert_country_tax(@country_jp, 10.00, 'Consumo Japón',     '2026-01-01', NULL, @tax_jp);
+CALL sp_upsert_country_tax(@country_cr, 13.00, 'IVA Costa Rica',    '2026-01-01', NULL, @tax_cr);
+
+-- 8. MARCAS (IA-Driven, necesarias para el flujo de Dynamic)
+CALL sp_upsert_brand('Aura Organics',  'Skincare y cosmética dermatológica',  1, @brand_aura);
+CALL sp_upsert_brand('Vital Essence',  'Cuidado capilar y aceites esenciales',1, @brand_vital);
+CALL sp_upsert_brand('EcoLuxe',        'Aromaterapia y bienestar',            1, @brand_ecoluxe);
+
+-- 9. SITIOS WEB (9 sitios usando países existentes en Etheria)
+-- Aura Organics
+CALL sp_upsert_website(@brand_aura,    @country_cr, 'https://aura-cr.com',    'Skincare premium Costa Rica', NULL, '2026-05-01', NULL, @site_1);
+CALL sp_upsert_website(@brand_aura,    @country_co, 'https://aura-co.com',    'Skincare premium Colombia',   NULL, '2026-05-01', NULL, @site_2);
+CALL sp_upsert_website(@brand_aura,    @country_mx, 'https://aura-mx.com',    'Skincare premium México',     NULL, '2026-05-01', NULL, @site_3);
+-- Vital Essence
+CALL sp_upsert_website(@brand_vital,   @country_us, 'https://vital-us.com',   'Hair care USA',               NULL, '2026-05-01', NULL, @site_4);
+CALL sp_upsert_website(@brand_vital,   @country_ni, 'https://vital-ni.com',   'Hair care Nicaragua',         NULL, '2026-05-01', NULL, @site_5);
+CALL sp_upsert_website(@brand_vital,   @country_es, 'https://vital-es.com',   'Hair care España',            NULL, '2026-05-01', NULL, @site_6);
+-- EcoLuxe
+CALL sp_upsert_website(@brand_ecoluxe, @country_br, 'https://ecoluxe-br.com', 'Aromaterapia Brasil',         NULL, '2026-05-01', NULL, @site_7);
+CALL sp_upsert_website(@brand_ecoluxe, @country_fr, 'https://ecoluxe-fr.com', 'Aromaterapia Francia',        NULL, '2026-05-01', NULL, @site_8);
+CALL sp_upsert_website(@brand_ecoluxe, @country_jp, 'https://ecoluxe-jp.com', 'Aromaterapia Japón',          NULL, '2026-05-01', NULL, @site_9);
+
+-- ============================================================
+-- 10. CATÁLOGO DE PRODUCTOS (100 productos vinculados a etheriaProductId 1-100)
+-- CORRECCIONES APLICADAS:
+--   · CREATE PROCEDURE (era CREATE PROCEDURE — fallaba en ejecuciones repetidas)
+--   · Eliminado SELECT muerto de currencyId (línea 1228 original — era código muerto
+--     sobreescrito de inmediato por el CASE; además podía disparar NOT FOUND)
+--   · Variables de moneda resueltas internamente con SELECT por currencyCode
+--     (era @curr_* de sesión — si el SP se llama desde otra sesión, serían NULL)
+--   · OUT de sp_set_website_product_price capturado en v_price_id (variable local)
+--     (era @price_id de sesión — inconsistente con el resto de variables locales)
+--   · DROP PROCEDURE IF EXISTS (era DROP PROCEDURE — fallaba si ya no existía)
+-- ============================================================
+DELIMITER $$
+CREATE PROCEDURE sp_populate_dynamic_full()
+BEGIN
+    -- Variables de control del bucle y de trabajo
+    DECLARE v_product_id         INT UNSIGNED DEFAULT 1;
+    DECLARE v_website_id         INT UNSIGNED;
+    DECLARE v_brand_id           INT UNSIGNED;
+    DECLARE v_catalog_id         INT UNSIGNED;
+    DECLARE v_website_product_id INT UNSIGNED;
+    DECLARE v_price_id           INT UNSIGNED;    -- ← antes era @price_id (sesión)
+    DECLARE v_price              DECIMAL(14,2);
+    DECLARE v_currency_id        INT UNSIGNED;
+
+    -- IDs de moneda resueltos desde la BD (no dependen de variables de sesión)
+    DECLARE v_curr_crc INT UNSIGNED;
+    DECLARE v_curr_cop INT UNSIGNED;
+    DECLARE v_curr_mxn INT UNSIGNED;
+    DECLARE v_curr_usd INT UNSIGNED;
+    DECLARE v_curr_nio INT UNSIGNED;
+    DECLARE v_curr_eur INT UNSIGNED;
+    DECLARE v_curr_brl INT UNSIGNED;
+    DECLARE v_curr_jpy INT UNSIGNED;
+
+    -- Carga de IDs de moneda al inicio del procedimiento
+    SELECT currencyId INTO v_curr_crc FROM Currencies WHERE currencyCode = 'CRC' AND isDeleted = 0 LIMIT 1;
+    SELECT currencyId INTO v_curr_cop FROM Currencies WHERE currencyCode = 'COP' AND isDeleted = 0 LIMIT 1;
+    SELECT currencyId INTO v_curr_mxn FROM Currencies WHERE currencyCode = 'MXN' AND isDeleted = 0 LIMIT 1;
+    SELECT currencyId INTO v_curr_usd FROM Currencies WHERE currencyCode = 'USD' AND isDeleted = 0 LIMIT 1;
+    SELECT currencyId INTO v_curr_nio FROM Currencies WHERE currencyCode = 'NIO' AND isDeleted = 0 LIMIT 1;
+    SELECT currencyId INTO v_curr_eur FROM Currencies WHERE currencyCode = 'EUR' AND isDeleted = 0 LIMIT 1;
+    SELECT currencyId INTO v_curr_brl FROM Currencies WHERE currencyCode = 'BRL' AND isDeleted = 0 LIMIT 1;
+    SELECT currencyId INTO v_curr_jpy FROM Currencies WHERE currencyCode = 'JPY' AND isDeleted = 0 LIMIT 1;
+
+    WHILE v_product_id <= 100 DO
+        -- Rotar a través de los 9 sitios web (1-9)
+        SET v_website_id = ((v_product_id - 1) % 9) + 1;
+
+        SELECT brandId INTO v_brand_id
+          FROM Websites
+         WHERE websiteId = v_website_id
+         LIMIT 1;
+        -- ↑ Eliminado el SELECT de currencyId que era código muerto
+        --   (v_currency_id se sobreescribía de inmediato en el CASE)
+
+        -- Insertar en catálogo (etheriaProductId = v_product_id)
+        CALL sp_upsert_product_catalog(
+            v_product_id,
+            v_brand_id,
+            v_website_id,
+            CONCAT('Producto B2C ', v_product_id),
+            'Generado por IA para Dynamic',
+            CONCAT('https://cdn.dynamic.com/', v_product_id, '.jpg'),
+            'Categoría General',
+            'Beneficios de salud',
+            1,
+            v_catalog_id
+        );
+
+        -- Vincular a sitio web
+        CALL sp_upsert_website_product(v_website_id, v_catalog_id, 0, 1, v_website_product_id);
+
+        -- Asignar precio y moneda local según sitio
+        -- Usa variables locales v_curr_* en lugar de variables de sesión @curr_*
+        CASE v_website_id
+            WHEN 1 THEN SET v_price = 25000.00;  SET v_currency_id = v_curr_crc;
+            WHEN 2 THEN SET v_price = 200000.00; SET v_currency_id = v_curr_cop;
+            WHEN 3 THEN SET v_price = 850.00;    SET v_currency_id = v_curr_mxn;
+            WHEN 4 THEN SET v_price = 50.00;     SET v_currency_id = v_curr_usd;
+            WHEN 5 THEN SET v_price = 900.00;    SET v_currency_id = v_curr_nio;
+            WHEN 6 THEN SET v_price = 45.00;     SET v_currency_id = v_curr_eur;
+            WHEN 7 THEN SET v_price = 400.00;    SET v_currency_id = v_curr_brl;
+            WHEN 8 THEN SET v_price = 55.00;     SET v_currency_id = v_curr_eur;
+            WHEN 9 THEN SET v_price = 6500.00;   SET v_currency_id = v_curr_jpy;
+        END CASE;
+
+        CALL sp_set_website_product_price(
+            v_website_product_id, v_price, v_currency_id,
+            '2026-05-01', NULL,
+            v_price_id    -- ← antes era @price_id (variable de sesión)
+        );
+
+        SET v_product_id = v_product_id + 1;
+    END WHILE;
+END$$
+DELIMITER ;
+
+CALL sp_populate_dynamic_full();
+DROP PROCEDURE IF EXISTS sp_populate_dynamic_full;  -- ← agregado IF EXISTS
+
+-- 11. CLIENTES (Usando países existentes)
+CALL sp_register_customer('María',  'González', 'maria.gonzalez@crcr.com', 'hash123', '+506-8888-7777',   @country_cr, @cust1);
+CALL sp_register_customer('John',   'Smith',    'john.smith@us.com',       'hash456', '+1-305-555-1234',  @country_us, @cust2);
+CALL sp_register_customer('Carlos', 'López',    'carlos.lopez@coco.com',   'hash789', '+57-300-123-4567', @country_co, @cust3);
+CALL sp_register_customer('Ana',    'García',   'ana.garcia@mxmx.com',     'hash012', '+52-55-1234-5678', @country_mx, @cust4);
+CALL sp_register_customer('Luis',   'Ramírez',  'luis.ramirez@nini.com',   'hash345', '+505-8123-4567',   @country_ni, @cust5);
+
+-- 12. DIRECCIONES DE CLIENTES (Vinculadas a direcciones existentes)
+CALL sp_add_customer_address(@cust1, @addr_cr_1, 'Casa',        1, @cust_addr1);
+CALL sp_add_customer_address(@cust2, @addr_us_1, 'Office',      1, @cust_addr2);
+CALL sp_add_customer_address(@cust3, @addr_co_1, 'Apartamento', 1, @cust_addr3);
+CALL sp_add_customer_address(@cust4, @addr_mx_1, 'Casa',        1, @cust_addr4);
+CALL sp_add_customer_address(@cust5, @addr_ni_1, 'Casa',        1, @cust_addr5);

@@ -834,16 +834,33 @@ $$;
 --  externalOrderNumber permite mapear 1-a-1 con la orden de Dynamic.
 -- ============================================================
 CREATE OR REPLACE PROCEDURE sp_create_dispatch_order(
-    IN    p_externalOrderNumber     VARCHAR(60),
     IN    p_productId               INTEGER,
     IN    p_quantityDispatched      DECIMAL(12,3),
     IN    p_destinationCountryId    INTEGER,
     IN    p_unitCostUsd             DECIMAL(12,4),
-    INOUT p_dispatchOrderId         INTEGER
+    INOUT p_dispatchOrderId         INTEGER,
+    INOUT p_generatedOrderNumber    VARCHAR(60) -- Nuevo parámetro de salida
 )
 LANGUAGE plpgsql
 AS $$
+DECLARE
+    v_country_iso VARCHAR(3);
+    v_last_number INTEGER;
+    v_prefix      VARCHAR(10);
 BEGIN
+    SELECT isoCode INTO v_country_iso 
+      FROM Countries 
+     WHERE countryId = p_destinationCountryId;
+
+    v_prefix := 'EXP-' || v_country_iso || '-';
+
+    SELECT COALESCE(MAX(CAST(SUBSTRING(externalOrderNumber FROM '\d+$') AS INTEGER)), 0)
+      INTO v_last_number
+      FROM DispatchOrders
+     WHERE externalOrderNumber LIKE v_prefix || '%';
+
+    p_generatedOrderNumber := v_prefix || LPAD((v_last_number + 1)::TEXT, 3, '0');
+
     IF p_quantityDispatched <= 0 THEN
         RAISE EXCEPTION 'La cantidad despachada debe ser mayor a cero.';
     END IF;
@@ -852,19 +869,17 @@ BEGIN
         externalOrderNumber, productId, quantityDispatched,
         destinationCountryId, unitCostUsd, status
     ) VALUES (
-        p_externalOrderNumber, p_productId, p_quantityDispatched,
+        p_generatedOrderNumber, p_productId, p_quantityDispatched,
         p_destinationCountryId, p_unitCostUsd, 'PENDIENTE'
     )
     RETURNING dispatchOrderId INTO p_dispatchOrderId;
 
     CALL sp_log_event('sp_create_dispatch_order', 'INSERT', 'DispatchOrders', p_dispatchOrderId,
-        'Orden de despacho creada: productId ' || p_productId ||
-        ', cantidad: ' || p_quantityDispatched ||
-        ', destino countryId: ' || p_destinationCountryId ||
-        COALESCE(', externalOrder: ' || p_externalOrderNumber, ''), 'SUCCESS', NULL);
+        'Orden automática creada: ' || p_generatedOrderNumber || ' para producto: ' || p_productId, 'SUCCESS', NULL);
+
 EXCEPTION WHEN OTHERS THEN
     CALL sp_log_event('sp_create_dispatch_order', 'INSERT', 'DispatchOrders', NULL,
-        'Error crear despacho productId: ' || p_productId || ' | ' || SQLERRM, 'ERROR', SQLERRM);
+        'Error crear despacho automático: ' || SQLERRM, 'ERROR', SQLERRM);
     RAISE;
 END;
 $$;
@@ -1102,7 +1117,7 @@ $$;
 
 -- Insercion:
 
--- countryRegions:
+-- geographicRegions:
 DO $$
 DECLARE
     -- Lista de nombres de regiones
@@ -1123,4 +1138,873 @@ BEGIN
         
         RAISE NOTICE 'Región procesada: % (ID: %)', v_region_nombre, v_id;
     END LOOP;
+END $$;
+
+-- Paises:
+DO $$
+DECLARE
+    -- Definimos un array de registros (Nombre, ISO)
+    paises RECORD;
+    v_lista_paises TEXT[][] := ARRAY[
+        ['Costa Rica', 'CRI'],
+        ['Estados Unidos', 'USA'],
+        ['Panamá', 'PAN'],
+        ['España', 'ESP'],
+        ['Colombia', 'COL'],
+        ['México', 'MEX'],
+        ['Alemania', 'DEU'],
+        ['Francia', 'FRA'],
+        ['Japón', 'JPN'],
+        ['Brasil', 'BRA'],
+        ['Nicaragua', 'NIC']
+    ];
+    v_id INTEGER;
+BEGIN
+    FOR i IN 1..array_length(v_lista_paises, 1) LOOP
+        CALL sp_upsert_country(
+            v_lista_paises[i][1],
+            v_lista_paises[i][2], 
+            v_id                  
+        );
+        
+        RAISE NOTICE 'Procesado: % (ID: %)', v_lista_paises[i][1], v_id;
+    END LOOP;
+END $$;
+
+-- countryRegions
+DO $$
+DECLARE
+    v_country_id INTEGER;
+    v_region_id  INTEGER;
+    v_link_id    INTEGER;
+	
+    v_mapeos TEXT[][] := ARRAY[
+        ['CRI', 'América Central'],
+        ['PAN', 'América Central'],
+        ['USA', 'América del Norte'],
+        ['MEX', 'América del Norte'],
+        ['BRA', 'América del Sur'],
+        ['COL', 'América del Sur'],
+        ['ESP', 'Europa Occidental'],
+        ['FRA', 'Europa Occidental'],
+        ['DEU', 'Europa Occidental'],
+        ['JPN', 'Asia Oriental'],
+        ['NIC', 'América Central']
+    ];
+BEGIN
+    FOR i IN 1..array_length(v_mapeos, 1) LOOP
+        SELECT countryId INTO v_country_id 
+        FROM Countries 
+        WHERE isoCode = v_mapeos[i][1] AND isDeleted = FALSE;
+
+        SELECT geographicRegionId INTO v_region_id 
+        FROM GeographicRegions 
+        WHERE regionName = v_mapeos[i][2] AND isDeleted = FALSE;
+
+        IF v_country_id IS NOT NULL AND v_region_id IS NOT NULL THEN
+            CALL sp_link_country_region(v_country_id, v_region_id, v_link_id);
+            RAISE NOTICE 'Vínculo exitoso: % -> % (ID: %)', v_mapeos[i][1], v_mapeos[i][2], v_link_id;
+        ELSE
+            RAISE WARNING 'No se pudo encontrar país (%) o región (%)', v_mapeos[i][1], v_mapeos[i][2];
+        END IF;
+    END LOOP;
+END $$;
+
+-- adminRegions:
+DO $$
+DECLARE
+    v_country_id INTEGER;
+    v_admin_id   INTEGER;
+    v_reg_dato   TEXT[];
+    v_lista_admin TEXT[][] := ARRAY[
+        ['NIC', 'Costa Caribe Sur'], 
+        ['NIC', 'Managua'],
+        ['CRI', 'San José'],
+        ['CRI', 'Cartago'],
+        ['PAN', 'Panamá'],
+        ['MEX', 'Ciudad de México'],
+        ['MEX', 'Jalisco'],
+        ['COL', 'Bogotá D.C.'],
+        ['COL', 'Antioquia'],
+        ['BRA', 'São Paulo'],
+        ['USA', 'Florida'],
+        ['ESP', 'Madrid'],
+        ['FRA', 'Île-de-France'],
+        ['DEU', 'Baviera'],
+        ['JPN', 'Tokio']
+    ];
+BEGIN
+    FOR i IN 1..array_length(v_lista_admin, 1) LOOP
+        SELECT countryId INTO v_country_id 
+        FROM Countries 
+        WHERE isoCode = v_lista_admin[i][1] AND isDeleted = FALSE;
+
+        IF v_country_id IS NOT NULL THEN
+            CALL sp_upsert_admin_region(v_country_id, v_lista_admin[i][2], v_admin_id);
+            RAISE NOTICE 'Insertada región: % para el país %', v_lista_admin[i][2], v_lista_admin[i][1];
+        ELSE
+            RAISE WARNING 'No se encontró el país con ISO: %', v_lista_admin[i][1];
+        END IF;
+    END LOOP;
+END $$;
+
+-- cities
+DO $$
+DECLARE
+    v_admin_id INTEGER;
+    v_city_id  INTEGER;
+    v_datos TEXT[][] := ARRAY[
+        ['NIC', 'Costa Caribe Sur', 'Bluefields'],
+        ['NIC', 'Managua', 'Managua'],
+        
+        ['CRI', 'San José', 'Escazú'],
+        ['CRI', 'Cartago', 'Paraíso'], 
+        ['PAN', 'Panamá', 'Ciudad de Panamá'],
+        ['MEX', 'Ciudad de México', 'Polanco'],
+        ['MEX', 'Jalisco', 'Guadalajara'],
+        ['COL', 'Bogotá D.C.', 'Bogotá'],
+        ['COL', 'Antioquia', 'Medellín'],
+        ['BRA', 'São Paulo', 'Campinas'],
+        
+        ['USA', 'Florida', 'Miami'],
+        ['ESP', 'Madrid', 'Madrid'],
+        ['FRA', 'Île-de-France', 'París'],
+        ['DEU', 'Baviera', 'Múnich'],
+        ['JPN', 'Tokio', 'Shibuya']
+    ];
+BEGIN
+    FOR i IN 1..array_length(v_datos, 1) LOOP
+        SELECT ar.adminRegionId INTO v_admin_id
+        FROM AdminRegions ar
+        JOIN Countries c ON ar.countryId = c.countryId
+        WHERE c.isoCode = v_datos[i][1] 
+          AND ar.regionName = v_datos[i][2]
+          AND ar.isDeleted = FALSE;
+
+        IF v_admin_id IS NOT NULL THEN
+            CALL sp_upsert_city(v_admin_id, v_datos[i][3], v_city_id);
+            RAISE NOTICE 'Ciudad procesada: % (ID: %) en %', v_datos[i][3], v_city_id, v_datos[i][2];
+        ELSE
+            RAISE WARNING 'No se encontró la región % para el país %', v_datos[i][2], v_datos[i][1];
+        END IF;
+    END LOOP;
+END $$;
+
+-- addresses
+DO $$
+DECLARE
+    v_city_id    INTEGER;
+    v_address_id INTEGER;
+    v_datos TEXT[][] := ARRAY[
+        ['NIC', 'Costa Caribe Sur', 'Bluefields', 'Zona Portuaria, Muelle Municipal', 'HUB Logístico Etheria', '82100'],
+        ['NIC', 'Managua', 'Managua', 'Plaza España, 200m Sur', 'Oficinas Administrativas', '11001'],
+        
+        ['CRI', 'San José', 'Escazú', 'Multiplaza Escazú, Local 45', 'Showroom Dynamic', '10201'],
+        ['CRI', 'Cartago', 'Paraíso', 'Calle Principal, frente al Parque', 'Centro de Distribución Local', '30201'],
+        ['PAN', 'Panamá', 'Ciudad de Panamá', 'Costa del Este, Business Park', 'Torre B, Piso 10', '0801'],
+        ['MEX', 'Ciudad de México', 'Polanco', 'Av. Presidente Masaryk 123', 'Boutique de Lujo', '11550'],
+        ['MEX', 'Jalisco', 'Guadalajara', 'Puerta de Hierro', 'Edificio Corporativo', '45116'],
+        ['COL', 'Bogotá D.C.', 'Bogotá', 'Carrera 7 # 71-21', 'Torre Financiera', '110221'],
+        ['COL', 'Antioquia', 'Medellín', 'El Poblado, Carrera 43A', 'Milla de Oro', '050021'],
+        ['BRA', 'São Paulo', 'Campinas', 'Av. Guilherme Campos, 500', 'Parque Dom Pedro', '13087'],
+        
+        ['USA', 'Florida', 'Miami', 'Port of Miami, Termina G', 'Warehouse de Exportación', '33132'],
+        ['ESP', 'Madrid', 'Madrid', 'Calle de Velázquez 50', 'Sourcing Office', '28001'],
+        ['FRA', 'Île-de-France', 'París', 'Rue du Faubourg Saint-Honoré', 'Cosmética Premium', '75008'],
+        ['DEU', 'Baviera', 'Múnich', 'Marienplatz 1', 'Aceites Esenciales Bulk', '80331'],
+        ['JPN', 'Tokio', 'Shibuya', '2-24-12 Shibuya', 'Scramble Square', '150-6101']
+    ];
+BEGIN
+    FOR i IN 1..array_length(v_datos, 1) LOOP
+        SELECT ct.cityId INTO v_city_id
+        FROM Cities ct
+        JOIN AdminRegions ar ON ct.adminRegionId = ar.adminRegionId
+        JOIN Countries c ON ar.countryId = c.countryId
+        WHERE c.isoCode = v_datos[i][1] 
+          AND ar.regionName = v_datos[i][2]
+          AND ct.cityName = v_datos[i][3]
+          AND ct.isDeleted = FALSE;
+
+        IF v_city_id IS NOT NULL THEN
+            CALL sp_insert_address(
+                v_city_id, 
+                v_datos[i][4], 
+                v_datos[i][5], 
+                v_datos[i][6], 
+                v_address_id
+            );
+            RAISE NOTICE 'Dirección creada en % para % (ID: %)', v_datos[i][3], v_datos[i][1], v_address_id;
+        ELSE
+            RAISE WARNING 'No se encontró la ciudad % para vincular la dirección', v_datos[i][3];
+        END IF;
+    END LOOP;
+END $$;
+
+-- currency
+DO $$
+DECLARE
+    v_country_id INTEGER;
+    v_curr_id    INTEGER;
+    v_datos TEXT[][] := ARRAY[
+        ['NIC', 'NIO', 'C$', 'Córdoba'],
+        ['USA', 'USD', '$',  'Dólar Estadounidense'],
+        ['CRI', 'CRC', '₡',  'Colón Costarricense'],
+        ['PAN', 'PAB', 'B/.', 'Balboa'],
+        ['COL', 'COP', '$',  'Peso Colombiano'],
+        ['MEX', 'MXN', '$',  'Peso Mexicano'],
+        ['BRA', 'BRL', 'R$', 'Real Brasileño'],
+        ['ESP', 'EUR', '€',  'Euro'],
+        ['FRA', 'EUR', '€',  'Euro'],
+        ['DEU', 'EUR', '€',  'Euro'],
+        ['JPN', 'JPY', '¥',  'Yen Japonés']
+    ];
+BEGIN
+    FOR i IN 1..array_length(v_datos, 1) LOOP
+        SELECT countryId INTO v_country_id 
+        FROM Countries 
+        WHERE isoCode = v_datos[i][1] AND isDeleted = FALSE;
+
+        IF v_country_id IS NOT NULL THEN
+            CALL sp_upsert_currency(
+                v_datos[i][2], 
+                v_datos[i][3], 
+                v_datos[i][4], 
+                v_country_id, 
+                v_curr_id     
+            );
+            RAISE NOTICE 'Moneda procesada: % (%) para el país %', v_datos[i][4], v_datos[i][2], v_datos[i][1];
+        ELSE
+            RAISE WARNING 'No se encontró el país con ISO % para insertar su moneda', v_datos[i][1];
+        END IF;
+    END LOOP;
+END $$;
+
+-- exchanges_rates
+DO $$
+DECLARE
+    v_curr_id     INTEGER;
+    v_rate_id     INTEGER;
+    v_datos TEXT[][] := ARRAY[
+        ['NIO', '0.027',   'Banco Central de Nicaragua'],
+        ['CRC', '0.0019',  'Banco Central de Costa Rica'],
+        ['PAB', '1.00',    'Paridad fija'],
+        ['COP', '0.00025', 'Banco de la República'],
+        ['MXN', '0.059',   'Banxico'],
+        ['BRL', '0.20',    'Banco Central do Brasil'],
+        ['EUR', '1.08',    'European Central Bank'],
+        ['JPY', '0.0066',  'Bank of Japan'],
+        ['USD', '1.00',    'Base']
+    ];
+BEGIN
+    FOR i IN 1..array_length(v_datos, 1) LOOP
+        SELECT currencyId INTO v_curr_id 
+        FROM Currencies 
+        WHERE currencyCode = v_datos[i][1] AND isDeleted = FALSE;
+
+        IF v_curr_id IS NOT NULL THEN
+            CALL sp_upsert_exchange_rate(
+                v_curr_id, 
+                v_datos[i][2]::DECIMAL(18,6), 
+                CURRENT_DATE, 
+                v_datos[i][3], 
+                v_rate_id
+            );
+            RAISE NOTICE 'Tasa procesada para %: % (ID: %)', v_datos[i][1], v_datos[i][2], v_rate_id;
+        ELSE
+            RAISE WARNING 'No se encontró la moneda % para insertar su tasa de cambio', v_datos[i][1];
+        END IF;
+    END LOOP;
+END $$;
+
+-- persons:
+DO $$
+DECLARE
+    v_person_id INTEGER;
+    v_datos TEXT[][] := ARRAY[
+        ['Carlos', 'Zeledón', 'c.zeledon@etheria.ni', '+505 8888-0001'],
+        ['Xiomara', 'Blandón', 'x.blandon@etheria.ni', '+505 8888-0002'],
+        
+        ['Roberto', 'Sánchez', 'r.sanchez@fastdelivery.com', '+506 2222-3333'],
+        ['Elena', 'White', 'e.white@globalshipping.us', '+1 305-555-0199'],
+        ['Jean', 'Dupont', 'j.dupont@frenchfragrance.fr', '+33 1 42 66 10 00'],
+        ['Hiroshi', 'Sato', 'sato@osaka-oils.jp', '+81 3-3475-1000'],
+        
+        ['Ricardo', 'Palacios', 'r.palacios@yahoo.mx', '+52 33 9988-7766'],
+        ['Valentina', 'Restrepo', 'v.restrepo@outlook.co', '+57 311 555-4433'],
+        ['Fernando', 'Silva', 'f.silva@uol.com.br', '+55 11 98765-4321'],
+        ['Gabriela', 'Solano', 'g.solano@est.itcr.ac.cr', '+506 6050-4030'],
+        ['Andrés', 'Castillo', 'a.castillo@info.pa', '+507 6611-2233'],
+        ['Yuki', 'Tanaka', 'y.tanaka@tokyo-net.jp', '+81 90-1234-5678']
+    ];
+BEGIN
+    FOR i IN 1..array_length(v_datos, 1) LOOP
+        CALL sp_upsert_person(
+            v_datos[i][1], 
+            v_datos[i][2], 
+            v_datos[i][3], 
+            v_datos[i][4], 
+            v_person_id   
+        );
+        RAISE NOTICE 'Insertado: % % (ID: %)', v_datos[i][1], v_datos[i][2], v_person_id;
+    END LOOP;
+END $$;
+
+-- suppliers
+DO $$
+DECLARE
+    v_supplier_id INTEGER;
+    v_country_id  INTEGER;
+    v_address_id  INTEGER;
+    v_contact_id  INTEGER;
+    v_datos TEXT[][] := ARRAY[
+        ['French Fragrance Corp', 'FRA', 'París', 'j.dupont@frenchfragrance.fr'],
+        ['Osaka Essential Oils', 'JPN', 'Shibuya', 'y.tanaka@tokyo-net.jp'],
+        ['Bavarian Healing Herbs', 'DEU', 'Múnich', 'sato@osaka-oils.jp'], 
+        ['Madrid Dermatological Sourcing', 'ESP', 'Madrid', 'e.white@globalshipping.us'],
+        ['Miami Export Logistics', 'USA', 'Miami', 'e.white@globalshipping.us']
+    ];
+BEGIN
+    FOR i IN 1..array_length(v_datos, 1) LOOP
+        SELECT countryId INTO v_country_id FROM Countries 
+        WHERE isoCode = v_datos[i][2] AND isDeleted = FALSE;
+
+        SELECT personId INTO v_contact_id FROM Persons 
+        WHERE email = v_datos[i][4] AND isDeleted = FALSE;
+
+        SELECT a.addressId INTO v_address_id 
+        FROM Addresses a
+        JOIN Cities ct ON a.cityId = ct.cityId
+        WHERE ct.cityName = v_datos[i][3] AND a.isDeleted = FALSE;
+
+        IF v_country_id IS NOT NULL AND v_contact_id IS NOT NULL AND v_address_id IS NOT NULL THEN
+            CALL sp_upsert_supplier(
+                v_datos[i][1], 
+                v_contact_id,  
+                v_country_id,  
+                v_address_id,  
+                TRUE,          
+                v_supplier_id  
+            );
+            RAISE NOTICE 'Proveedor creado: % (ID: %)', v_datos[i][1], v_supplier_id;
+        ELSE
+            RAISE WARNING 'Faltan datos para el proveedor % (País: %, Contacto: %, Direccion: %)', 
+                v_datos[i][1], v_country_id, v_contact_id, v_address_id;
+        END IF;
+    END LOOP;
+END $$;
+
+-- measurement_unit
+DO $$
+DECLARE
+    v_unit_id INTEGER;
+    v_unidades TEXT[] := ARRAY[
+        'Mililitros', 
+        'Litros',      
+        'Gramos',      
+        'Kilogramos',  
+        'Onzas',       
+        'Unidades',    
+        'Set'          
+    ];
+BEGIN
+    FOR i IN 1..array_length(v_unidades, 1) LOOP
+        CALL sp_upsert_measurement_unit(
+            v_unidades[i], 
+            v_unit_id
+        );
+        RAISE NOTICE 'Unidad procesada: % (ID: %)', v_unidades[i], v_unit_id;
+    END LOOP;
+END $$;
+
+-- productscategories
+DO $$
+DECLARE
+    v_cat_id INTEGER;
+    v_datos TEXT[][] := ARRAY[
+        ['Aceites Esenciales', 'Extractos naturales puros para aromaterapia y bienestar.'],
+        ['Cuidado Dermatológico', 'Productos cosméticos de alta gama con ingredientes exóticos.'],
+        ['Aromaterapia', 'Velas, difusores y mezclas para la relajación y salud mental.'],
+        ['Jabones Artesanales', 'Jabones orgánicos producidos con aceites de origen europeo y asiático.'],
+        ['Suplementos Naturales', 'Polvos y cápsulas basados en herbolaria tradicional internacional.'],
+        ['Fragancias Premium', 'Perfumes exclusivos desarrollados con marcas blancas de IA.'],
+        ['Cuidado Capilar', 'Tratamientos intensivos con aceites naturales y vitaminas.'],
+        ['Higiene de Lujo', 'Productos de aseo personal con estándares de calidad superiores.'],
+        ['Kits de Regalo', 'Conjuntos seleccionados de productos premium para ocasiones especiales.'],
+        ['Bebidas Saludables', 'Infusiones y elixires elaborados con insumos exóticos importados.']
+    ];
+BEGIN
+    FOR i IN 1..array_length(v_datos, 1) LOOP
+        CALL sp_upsert_product_category(
+            v_datos[i][1], 
+            v_datos[i][2], 
+            v_cat_id     
+        );
+        RAISE NOTICE 'Categoría procesada: % (ID: %)', v_datos[i][1], v_cat_id;
+    END LOOP;
+END $$;
+
+-- product
+DO $$
+DECLARE
+    v_prod_id  INTEGER;
+    v_cat_id   INTEGER;
+    v_unit_id  INTEGER;
+    v_datos TEXT[][] := ARRAY[
+        -- Aceites Esenciales
+        ['Aceite de Lavanda de Provenza', 'Aceites Esenciales', 'Mililitros', '0.0001', '0.05'],
+        ['Esencia de Sándalo de Japón', 'Aceites Esenciales', 'Mililitros', '0.0001', '0.05'],
+        ['Extracto de Eucalipto Australiano', 'Aceites Esenciales', 'Litros', '0.001', '0.92'],
+        
+        -- Cuidado Dermatológico
+        ['Serum Facial de Algas Rojas', 'Cuidado Dermatológico', 'Mililitros', '0.0002', '0.12'],
+        ['Crema Hidratante de Karité Dorado', 'Cuidado Dermatológico', 'Gramos', '0.0003', '0.25'],
+        
+        -- Aromaterapia
+        ['Vela Artesanal de Vainilla y Mirra', 'Aromaterapia', 'Unidades', '0.0005', '0.40'],
+        ['Difusor Ultrasónico Premium', 'Aromaterapia', 'Unidades', '0.002', '0.80'],
+        
+        -- Jabones Artesanales
+        ['Jabón de Carbón Activado y Menta', 'Jabones Artesanales', 'Gramos', '0.0002', '0.15'],
+        ['Barra de Limpieza de Leche de Burra', 'Jabones Artesanales', 'Gramos', '0.0002', '0.15'],
+        
+        -- Suplementos Naturales
+        ['Cápsulas de Cúrcuma Longa', 'Suplementos Naturales', 'Unidades', '0.0001', '0.10'],
+        ['Polvo de Maca Andina Orgánica', 'Suplementos Naturales', 'Gramos', '0.0005', '0.50'],
+        
+        -- Fragancias Premium
+        ['Perfume "Bruma del Desierto" (Eau de Parfum)', 'Fragancias Premium', 'Mililitros', '0.0004', '0.35'],
+        ['Agua de Colonia "Jardín Japonés"', 'Fragancias Premium', 'Mililitros', '0.0005', '0.45'],
+        
+        -- Cuidado Capilar
+        ['Máscara Capilar de Aceite de Argán', 'Cuidado Capilar', 'Mililitros', '0.0006', '0.55'],
+        ['Shampoo Sólido de Romero y Quina', 'Cuidado Capilar', 'Gramos', '0.0001', '0.10'],
+        
+        -- Higiene de Lujo
+        ['Sales de Baño del Mar Muerto', 'Higiene de Lujo', 'Kilogramos', '0.001', '1.05'],
+        ['Loción Corporal de Orquídeas Blancas', 'Higiene de Lujo', 'Mililitros', '0.0005', '0.50'],
+        
+        -- Kits de Regalo
+        ['Set de Bienestar "Zen Spirit"', 'Kits de Regalo', 'Set', '0.005', '2.50'],
+        ['Caja de Regalo "Ritual de Sueño"', 'Kits de Regalo', 'Set', '0.004', '1.80'],
+        
+        -- Bebidas Saludables
+        ['Elixir de Té Blanco y Jengibre', 'Bebidas Saludables', 'Mililitros', '0.0006', '0.60']
+    ];
+BEGIN
+    FOR i IN 1..array_length(v_datos, 1) LOOP
+        SELECT categoryId INTO v_cat_id FROM ProductCategories 
+        WHERE categoryName = v_datos[i][2] AND isDeleted = FALSE;
+        
+        SELECT unitId INTO v_unit_id FROM MeasurementUnits 
+        WHERE unitName = v_datos[i][3] AND isDeleted = FALSE;
+
+        IF v_cat_id IS NOT NULL AND v_unit_id IS NOT NULL THEN
+            CALL sp_upsert_product(
+                v_datos[i][1],          
+                v_cat_id,                
+                v_unit_id,               
+                v_datos[i][4]::DECIMAL,  
+                v_datos[i][5]::DECIMAL,  
+                v_prod_id                
+            );
+            RAISE NOTICE 'Producto procesado: % (ID: %)', v_datos[i][1], v_prod_id;
+        ELSE
+            RAISE WARNING 'No se pudo insertar % por falta de categoría o unidad.', v_datos[i][1];
+        END IF;
+    END LOOP;
+END $$;
+
+-- product_price
+DO $$
+DECLARE
+    v_prod_id     INTEGER;
+    v_price_id    INTEGER;
+    v_fecha_inicio DATE := '2026-01-01';
+    v_datos TEXT[][] := ARRAY[
+        ['Aceite de Lavanda de Provenza', '25.50'],
+        ['Esencia de Sándalo de Japón', '45.00'],
+        ['Extracto de Eucalipto Australiano', '15.75'],
+        ['Serum Facial de Algas Rojas', '85.00'],
+        ['Crema Hidratante de Karité Dorado', '62.30'],
+        ['Vela Artesanal de Vainilla y Mirra', '22.00'],
+        ['Difusor Ultrasónico Premium', '110.00'],
+        ['Jabón de Carbón Activado y Menta', '12.50'],
+        ['Barra de Limpieza de Leche de Burra', '18.00'],
+        ['Cápsulas de Cúrcuma Longa', '35.00'],
+        ['Polvo de Maca Andina Orgánica', '28.50'],
+        ['Perfume "Bruma del Desierto" (Eau de Parfum)', '145.00'],
+        ['Agua de Colonia "Jardín Japonés"', '95.00'],
+        ['Máscara Capilar de Aceite de Argán', '42.00'],
+        ['Shampoo Sólido de Romero y Quina', '15.00'],
+        ['Sales de Baño del Mar Muerto', '38.00'],
+        ['Loción Corporal de Orquídeas Blancas', '55.00'],
+        ['Set de Bienestar "Zen Spirit"', '180.00'],
+        ['Caja de Regalo "Ritual de Sueño"', '125.00'],
+        ['Elixir de Té Blanco y Jengibre', '20.00']
+    ];
+BEGIN
+    FOR i IN 1..array_length(v_datos, 1) LOOP
+        SELECT productId INTO v_prod_id 
+        FROM Products 
+        WHERE productName = v_datos[i][1] AND isDeleted = FALSE;
+
+        IF v_prod_id IS NOT NULL THEN
+            CALL sp_set_product_price(
+                v_prod_id, 
+                v_datos[i][2]::DECIMAL(12,4), 
+                v_fecha_inicio, 
+                NULL, 
+                v_price_id
+            );
+            RAISE NOTICE 'Precio USD % asignado a % (ID: %)', v_datos[i][2], v_datos[i][1], v_price_id;
+        ELSE
+            RAISE WARNING 'No se encontró el producto % para asignar precio.', v_datos[i][1];
+        END IF;
+    END LOOP;
+END $$;
+
+-- product_characteristic
+DO $$
+DECLARE
+    v_prod_id  INTEGER;
+    v_char_id  INTEGER;
+    v_datos TEXT[][] := ARRAY[
+        -- Origenes de insumos
+        ['Aceite de Lavanda de Provenza', 'Origen', 'Francia'],
+        ['Esencia de Sándalo de Japón', 'Origen', 'Kioto, Japón'],
+        ['Extracto de Eucalipto Australiano', 'Origen', 'Nueva Gales del Sur'],
+        ['Crema Hidratante de Karité Dorado', 'Origen', 'Ghana'],
+        ['Sales de Baño del Mar Muerto', 'Origen', 'Jordania'],
+        
+        -- Beneficios y notas
+        ['Serum Facial de Algas Rojas', 'Beneficio', 'Antienvejecimiento'],
+        ['Vela Artesanal de Vainilla y Mirra', 'Nota Olfativa', 'Dulce y Amaderado'],
+        ['Cápsulas de Cúrcuma Longa', 'Uso', 'Antiinflamatorio Natural'],
+        ['Perfume "Bruma del Desierto" (Eau de Parfum)', 'Concentración', '20% Esencia'],
+        ['Shampoo Sólido de Romero y Quina', 'Tipo de Cabello', 'Graso / Mixto'],
+        
+        -- Certificaciones
+        ['Polvo de Maca Andina Orgánica', 'Certificación', 'USDA Organic'],
+        ['Jabón de Carbón Activado y Menta', 'Certificación', 'Cruelty Free'],
+        ['Set de Bienestar "Zen Spirit"', 'Incluye', 'Difusor + 3 Aceites'],
+        ['Elixir de Té Blanco y Jengibre', 'Atributo', 'Sin Azúcar Añadida']
+    ];
+BEGIN
+    FOR i IN 1..array_length(v_datos, 1) LOOP
+        SELECT productId INTO v_prod_id 
+          FROM Products 
+         WHERE productName = v_datos[i][1] AND isDeleted = FALSE;
+
+        IF v_prod_id IS NOT NULL THEN
+            CALL sp_add_product_characteristic(
+                v_prod_id, 
+                v_datos[i][2], 
+                v_datos[i][3], 
+                v_char_id
+            );
+            RAISE NOTICE 'Característica [%: %] añadida a %', v_datos[i][2], v_datos[i][3], v_datos[i][1];
+        ELSE
+            RAISE WARNING 'Producto % no encontrado para añadir característica.', v_datos[i][1];
+        END IF;
+    END LOOP;
+END $$;
+
+-- bulkpurchases
+DO $$
+DECLARE
+    v_bulk_id      INTEGER;
+    v_prod_id      INTEGER;
+    v_supp_id      INTEGER;
+    v_unit_id      INTEGER;
+    v_country_id   INTEGER;
+    v_arrival_date TIMESTAMP := CURRENT_TIMESTAMP + INTERVAL '15 days';
+BEGIN
+    -- 1. Compra: Aceite de Lavanda (Francia)
+    SELECT productId INTO v_prod_id FROM Products WHERE productName = 'Aceite de Lavanda de Provenza';
+    SELECT supplierId INTO v_supp_id FROM Suppliers WHERE supplierName = 'French Fragrance Corp';
+    SELECT unitId INTO v_unit_id FROM MeasurementUnits WHERE unitName = 'Litros';
+    SELECT countryId INTO v_country_id FROM Countries WHERE isoCode = 'FRA';
+
+    CALL sp_register_bulk_purchase(
+        v_prod_id, v_supp_id, 50.000, v_unit_id, 1200.00, v_country_id, 
+        46.000, 0.0500, v_arrival_date, 150.00, 200.00, v_bulk_id
+    );
+
+    -- 2. Compra: Esencia de Sándalo (Japón)
+    SELECT productId INTO v_prod_id FROM Products WHERE productName = 'Esencia de Sándalo de Japón';
+    SELECT supplierId INTO v_supp_id FROM Suppliers WHERE supplierName = 'Osaka Essential Oils';
+    SELECT unitId INTO v_unit_id FROM MeasurementUnits WHERE unitName = 'Litros';
+    SELECT countryId INTO v_country_id FROM Countries WHERE isoCode = 'JPN';
+
+    CALL sp_register_bulk_purchase(
+        v_prod_id, v_supp_id, 20.000, v_unit_id, 3500.00, v_country_id, 
+        18.500, 0.0250, v_arrival_date + INTERVAL '5 days', 450.00, 300.00, v_bulk_id
+    );
+
+    -- 3. Compra: Serum Facial (España)
+    SELECT productId INTO v_prod_id FROM Products WHERE productName = 'Serum Facial de Algas Rojas';
+    SELECT supplierId INTO v_supp_id FROM Suppliers WHERE supplierName = 'Madrid Dermatological Sourcing';
+    SELECT unitId INTO v_unit_id FROM MeasurementUnits WHERE unitName = 'Unidades';
+    SELECT countryId INTO v_country_id FROM Countries WHERE isoCode = 'ESP';
+
+    CALL sp_register_bulk_purchase(
+        v_prod_id, v_supp_id, 500.000, v_unit_id, 8500.00, v_country_id, 
+        60.000, 0.1500, v_arrival_date, 800.00, 450.00, v_bulk_id
+    );
+
+    -- 4. Compra: Cápsulas de Cúrcuma (Alemania)
+    SELECT productId INTO v_prod_id FROM Products WHERE productName = 'Cápsulas de Cúrcuma Longa';
+    SELECT supplierId INTO v_supp_id FROM Suppliers WHERE supplierName = 'Bavarian Healing Herbs';
+    SELECT unitId INTO v_unit_id FROM MeasurementUnits WHERE unitName = 'Unidades';
+    SELECT countryId INTO v_country_id FROM Countries WHERE isoCode = 'DEU';
+
+    CALL sp_register_bulk_purchase(
+        v_prod_id, v_supp_id, 1000.000, v_unit_id, 4000.00, v_country_id, 
+        100.000, 0.2000, v_arrival_date + INTERVAL '2 days', 200.00, 350.00, v_bulk_id
+    );
+
+    -- 5. Compra: Set de Bienestar (USA)
+    SELECT productId INTO v_prod_id FROM Products WHERE productName = 'Set de Bienestar "Zen Spirit"';
+    SELECT supplierId INTO v_supp_id FROM Suppliers WHERE supplierName = 'Miami Export Logistics';
+    SELECT unitId INTO v_unit_id FROM MeasurementUnits WHERE unitName = 'Set';
+    SELECT countryId INTO v_country_id FROM Countries WHERE isoCode = 'USA';
+
+    CALL sp_register_bulk_purchase(
+        v_prod_id, v_supp_id, 100.000, v_unit_id, 5500.00, v_country_id, 
+        250.000, 1.5000, v_arrival_date, 550.00, 600.00, v_bulk_id
+    );
+
+    RAISE NOTICE 'Carga inicial de compras a granel completada satisfactoriamente.';
+END $$;
+
+-- permittypes
+DO $$
+DECLARE
+    v_permit_id INTEGER;
+    v_datos TEXT[][] := ARRAY[
+        ['Registro Sanitario de Salud', 'Permiso obligatorio para productos de cuidado personal y cosméticos (Jabones, Cremas, Perfumes).'],
+        ['Permiso de Importación Fitozoosanitario', 'Requerido para el ingreso de materias primas naturales como aceites esenciales y hierbas.'],
+        ['Certificación de Libre Venta (CLV)', 'Documento que acredita que el producto se vende libremente en el país de origen.'],
+        ['Registro de Suplementos Alimenticios', 'Normativa específica para la comercialización de cápsulas y polvos nutricionales.'],
+        ['Certificado de Análisis (COA)', 'Documento técnico que garantiza la composición química y pureza del lote importado.'],
+        ['Licencia de Funcionamiento de Bodega', 'Permiso legal para el almacenamiento de sustancias químicas o inflamables (Perfumes).']
+    ];
+BEGIN
+    FOR i IN 1..array_length(v_datos, 1) LOOP
+        CALL sp_upsert_permit_type(
+            v_datos[i][1], 
+            v_datos[i][2], 
+            v_permit_id    
+        );
+        RAISE NOTICE 'Tipo de permiso procesado: % (ID: %)', v_datos[i][1], v_permit_id;
+    END LOOP;
+END $$;
+
+--importpermits
+DO $$
+DECLARE
+    v_import_id  INTEGER;
+    v_bulk_id    INTEGER;
+    v_type_id    INTEGER;
+BEGIN
+    -- 1. Permiso Fitozoosanitario para Aceite de Lavanda (Bulk 1)
+    SELECT bulkId INTO v_bulk_id FROM BulkPurchases 
+     WHERE productId = (SELECT productId FROM Products WHERE productName = 'Aceite de Lavanda de Provenza')
+     ORDER BY arrivalDate DESC LIMIT 1;
+    
+    SELECT permitTypeId INTO v_type_id FROM PermitTypes WHERE permitTypeName = 'Permiso de Importación Fitozoosanitario';
+
+    IF v_bulk_id IS NOT NULL AND v_type_id IS NOT NULL THEN
+        CALL sp_register_import_permit(
+            v_bulk_id, v_type_id, 'AGRO-FRA-2026-001'::VARCHAR, 'Ministerio de Agricultura'::VARCHAR, 
+            CURRENT_DATE, (CURRENT_DATE + INTERVAL '1 year')::DATE, 75.00::DECIMAL, v_import_id
+        );
+    END IF;
+
+    -- 2. Certificado de Análisis (COA) para Esencia de Sándalo (Bulk 2)
+    SELECT bulkId INTO v_bulk_id FROM BulkPurchases 
+     WHERE productId = (SELECT productId FROM Products WHERE productName = 'Esencia de Sándalo de Japón')
+     ORDER BY arrivalDate DESC LIMIT 1;
+    
+    SELECT permitTypeId INTO v_type_id FROM PermitTypes WHERE permitTypeName = 'Certificado de Análisis (COA)';
+
+    IF v_bulk_id IS NOT NULL AND v_type_id IS NOT NULL THEN
+        CALL sp_register_import_permit(
+            v_bulk_id, v_type_id, 'COA-JPN-9928'::VARCHAR, 'Laboratorios Osaka Tech'::VARCHAR, 
+            (CURRENT_DATE - INTERVAL '10 days')::DATE, -- Corrección: Cast a DATE
+            (CURRENT_DATE + INTERVAL '2 years')::DATE, 45.00::DECIMAL, v_import_id
+        );
+    END IF;
+
+    -- 3. Registro Sanitario para Serum Facial (Bulk 3)
+    SELECT bulkId INTO v_bulk_id FROM BulkPurchases 
+     WHERE productId = (SELECT productId FROM Products WHERE productName = 'Serum Facial de Algas Rojas')
+     ORDER BY arrivalDate DESC LIMIT 1;
+    
+    SELECT permitTypeId INTO v_type_id FROM PermitTypes WHERE permitTypeName = 'Registro Sanitario de Salud';
+
+    IF v_bulk_id IS NOT NULL AND v_type_id IS NOT NULL THEN
+        CALL sp_register_import_permit(
+            v_bulk_id, v_type_id, 'RS-ESP-D-445'::VARCHAR, 'Ministerio de Salud'::VARCHAR, 
+            CURRENT_DATE, (CURRENT_DATE + INTERVAL '5 years')::DATE, 250.00::DECIMAL, v_import_id
+        );
+    END IF;
+
+    -- 4. Registro de Suplementos para Cúrcuma (Bulk 4)
+    SELECT bulkId INTO v_bulk_id FROM BulkPurchases 
+     WHERE productId = (SELECT productId FROM Products WHERE productName = 'Cápsulas de Cúrcuma Longa')
+     ORDER BY arrivalDate DESC LIMIT 1;
+    
+    SELECT permitTypeId INTO v_type_id FROM PermitTypes WHERE permitTypeName = 'Registro de Suplementos Alimenticios';
+
+    IF v_bulk_id IS NOT NULL AND v_type_id IS NOT NULL THEN
+        CALL sp_register_import_permit(
+            v_bulk_id, v_type_id, 'SUP-DEU-881'::VARCHAR, 'Dirección de Regulación Sanitaria'::VARCHAR, 
+            CURRENT_DATE, (CURRENT_DATE + INTERVAL '3 years')::DATE, 180.00::DECIMAL, v_import_id
+        );
+    END IF;
+
+    -- 5. Set de Bienestar (bulk 5)
+    SELECT bulkId INTO v_bulk_id FROM BulkPurchases 
+     WHERE productId = (SELECT productId FROM Products WHERE productName = 'Set de Bienestar "Zen Spirit"')
+     ORDER BY arrivalDate DESC LIMIT 1;
+    
+    SELECT permitTypeId INTO v_type_id FROM PermitTypes WHERE permitTypeName = 'Certificado de Análisis (COA)';
+
+    IF v_bulk_id IS NOT NULL AND v_type_id IS NOT NULL THEN
+        CALL sp_register_import_permit(
+            v_bulk_id, v_type_id, 'COA-USA-MIA-2026-005'::VARCHAR, 'FDA / Customs and Border Protection'::VARCHAR, 
+            CURRENT_DATE, (CURRENT_DATE + INTERVAL '2 years')::DATE, 180.00::DECIMAL, v_import_id
+        );
+    END IF;
+
+    RAISE NOTICE 'Permisos de importación vinculados exitosamente.';
+END $$;
+
+-- dispatchorders
+DO $$
+DECLARE
+    v_dispatch_id  INTEGER;
+    v_order_num    VARCHAR(60);
+    v_prod_id      INTEGER;
+    v_country_id   INTEGER;
+BEGIN
+    -- 1. Despacho a MÉXICO: Serum Facial de Algas Rojas
+    SELECT productId INTO v_prod_id FROM Products WHERE productName = 'Serum Facial de Algas Rojas';
+    SELECT countryId INTO v_country_id FROM Countries WHERE isoCode = 'MEX';
+    
+    v_order_num := NULL; -- Limpiar para el siguiente INOUT
+    CALL sp_create_dispatch_order(v_prod_id, 100.000::DECIMAL, v_country_id, 12.5000::DECIMAL, v_dispatch_id, v_order_num);
+    RAISE NOTICE 'Orden generada: %', v_order_num;
+
+    -- 2. Despacho a PANAMÁ: Jabón de Carbón Activado y Menta
+    SELECT productId INTO v_prod_id FROM Products WHERE productName = 'Jabón de Carbón Activado y Menta';
+    SELECT countryId INTO v_country_id FROM Countries WHERE isoCode = 'PAN';
+    
+    v_order_num := NULL;
+    CALL sp_create_dispatch_order(v_prod_id, 250.000::DECIMAL, v_country_id, 4.2500::DECIMAL, v_dispatch_id, v_order_num);
+    RAISE NOTICE 'Orden generada: %', v_order_num;
+
+    -- 3. Despacho a COLOMBIA: Cápsulas de Cúrcuma Longa
+    SELECT productId INTO v_prod_id FROM Products WHERE productName = 'Cápsulas de Cúrcuma Longa';
+    SELECT countryId INTO v_country_id FROM Countries WHERE isoCode = 'COL';
+    
+    v_order_num := NULL;
+    CALL sp_create_dispatch_order(v_prod_id, 500.000::DECIMAL, v_country_id, 0.1500::DECIMAL, v_dispatch_id, v_order_num);
+    RAISE NOTICE 'Orden generada: %', v_order_num;
+
+    -- 4. Despacho a BRASIL: Perfume "Bruma del Desierto"
+    SELECT productId INTO v_prod_id FROM Products WHERE productName = 'Perfume "Bruma del Desierto" (Eau de Parfum)';
+    SELECT countryId INTO v_country_id FROM Countries WHERE isoCode = 'BRA';
+    
+    v_order_num := NULL;
+    CALL sp_create_dispatch_order(v_prod_id, 75.000::DECIMAL, v_country_id, 45.0000::DECIMAL, v_dispatch_id, v_order_num);
+    RAISE NOTICE 'Orden generada: %', v_order_num;
+
+    -- 5. Segundo Despacho a COSTA RICA 
+    SELECT productId INTO v_prod_id FROM Products WHERE productName = 'Crema Hidratante de Karité Dorado';
+    SELECT countryId INTO v_country_id FROM Countries WHERE isoCode = 'CRI';
+    
+    v_order_num := NULL;
+    CALL sp_create_dispatch_order(v_prod_id, 120.000::DECIMAL, v_country_id, 18.0000::DECIMAL, v_dispatch_id, v_order_num);
+    RAISE NOTICE 'Orden generada: %', v_order_num;
+
+END $$;
+
+-- inventoryhub:
+DO $$
+DECLARE
+    v_movement_id  INTEGER;
+    v_prod_id      INTEGER;
+    v_bulk_id      INTEGER;
+    v_dispatch_id  INTEGER;
+BEGIN
+    -- 1. ENTRADA: Aceite de Lavanda (Bulk 1)
+    SELECT productId INTO v_prod_id FROM Products WHERE productName = 'Aceite de Lavanda de Provenza';
+    SELECT bulkId INTO v_bulk_id FROM BulkPurchases WHERE productId = v_prod_id ORDER BY arrivalDate DESC LIMIT 1;
+
+    CALL sp_register_inventory_movement(
+        v_prod_id, 
+        v_bulk_id, 
+        'ENTRADA'::VARCHAR, 
+        50.000::DECIMAL,    
+        24.0000::DECIMAL,   
+        v_bulk_id,               
+        'Carga inicial desde Francia'::VARCHAR, 
+        v_movement_id
+    );
+
+    -- 2. ENTRADA: Serum Facial de Algas Rojas (Bulk 3)
+    SELECT productId INTO v_prod_id FROM Products WHERE productName = 'Serum Facial de Algas Rojas';
+    SELECT bulkId INTO v_bulk_id FROM BulkPurchases WHERE productId = v_prod_id ORDER BY arrivalDate DESC LIMIT 1;
+
+    CALL sp_register_inventory_movement(
+        v_prod_id, 
+        v_bulk_id, 
+        'ENTRADA'::VARCHAR, 
+        500.000::DECIMAL, 
+        17.0000::DECIMAL, 
+        v_bulk_id, 
+        'Ingreso de lote desde España'::VARCHAR, 
+        v_movement_id
+    );
+
+    -- 3. SALIDA: Despacho a Costa Rica (Usando la orden generada anteriormente)
+    -- Buscamos el producto y la orden pendiente
+    SELECT productId INTO v_prod_id FROM Products WHERE productName = 'Aceite de Lavanda de Provenza';
+    SELECT dispatchOrderId INTO v_dispatch_id FROM DispatchOrders 
+     WHERE productId = v_prod_id AND externalOrderNumber LIKE 'EXP-CRI-%' 
+     ORDER BY createdAt DESC LIMIT 1;
+
+    IF v_dispatch_id IS NOT NULL THEN
+        CALL sp_register_inventory_movement(
+            v_prod_id, 
+            v_bulk_id,              
+            'SALIDA'::VARCHAR, 
+            15.000::DECIMAL,    
+            25.5000::DECIMAL,   
+            v_dispatch_id, 
+            'Envío a San José, Costa Rica'::VARCHAR, 
+            v_movement_id
+        );
+    END IF;
+    RAISE NOTICE 'Movimientos de inventario procesados con éxito.';
+END $$;
+
+-- inventorystock
+
+DO $$
+DECLARE
+    v_prod_id     INTEGER;
+    v_final_stock DECIMAL(12,3);
+BEGIN
+    SELECT productId INTO v_prod_id FROM Products WHERE productName = 'Aceite de Lavanda de Provenza';
+
+    -- Sincroniza la tabla de stock sumando todo el historial de InventoryHub
+    CALL sp_recalculate_inventory_stock(
+        v_prod_id, 
+        v_final_stock 
+    );
+
+    RAISE NOTICE 'Stock recalculado exitosamente. Saldo auditado: %', v_final_stock;
 END $$;
