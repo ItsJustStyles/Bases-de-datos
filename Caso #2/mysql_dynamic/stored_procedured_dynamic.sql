@@ -366,7 +366,7 @@ BEGIN
 
     SELECT websiteId INTO v_existing
       FROM Websites
-     WHERE siteUrl = p_siteUrl AND isDeleted = 0
+     WHERE siteUrl COLLATE utf8mb4_0900_ai_ci = p_siteUrl COLLATE utf8mb4_0900_ai_ci AND isDeleted = 0
      LIMIT 1;
 
     IF v_existing IS NULL THEN
@@ -622,7 +622,7 @@ BEGIN
 
     SELECT customerId INTO v_existing
       FROM Customers
-     WHERE email = p_email AND isDeleted = 0
+     WHERE email COLLATE utf8mb4_0900_ai_ci = p_email COLLATE utf8mb4_0900_ai_ci AND isDeleted = 0
      LIMIT 1;
 
     IF v_existing IS NOT NULL THEN
@@ -931,7 +931,7 @@ BEGIN
 
     SELECT courierId INTO v_existing
       FROM Couriers
-     WHERE courierName = p_courierName AND isDeleted = 0
+     WHERE courierName COLLATE utf8mb4_0900_ai_ci = p_courierName COLLATE utf8mb4_0900_ai_ci AND isDeleted = 0
      LIMIT 1;
 
     IF v_existing IS NULL THEN
@@ -1085,13 +1085,6 @@ DELIMITER ;
 
 -- LLenado de tablas:
 
--- ============================================================
---  POBLACIÓN INICIAL (Datos idénticos a Etheria Global)
---  Se utilizan los mismos datos del archivo de Etheria:
---  11 Países, 15 Regiones/AdminRegions, 15 Ciudades, 15 Direcciones,
---  11 Monedas, y 100 Productos (etheriaProductId 1-100).
--- ============================================================
-
 -- 1. PAISES (11 países idénticos a Etheria)
 CALL sp_upsert_country('Costa Rica',      'CRI', 1, @country_cr);
 CALL sp_upsert_country('Estados Unidos',  'USA', 1, @country_us);
@@ -1213,32 +1206,20 @@ CALL sp_upsert_website(@brand_ecoluxe, @country_br, 'https://ecoluxe-br.com', 'A
 CALL sp_upsert_website(@brand_ecoluxe, @country_fr, 'https://ecoluxe-fr.com', 'Aromaterapia Francia',        NULL, '2026-05-01', NULL, @site_8);
 CALL sp_upsert_website(@brand_ecoluxe, @country_jp, 'https://ecoluxe-jp.com', 'Aromaterapia Japón',          NULL, '2026-05-01', NULL, @site_9);
 
--- ============================================================
 -- 10. CATÁLOGO DE PRODUCTOS (100 productos vinculados a etheriaProductId 1-100)
--- CORRECCIONES APLICADAS:
---   · CREATE PROCEDURE (era CREATE PROCEDURE — fallaba en ejecuciones repetidas)
---   · Eliminado SELECT muerto de currencyId (línea 1228 original — era código muerto
---     sobreescrito de inmediato por el CASE; además podía disparar NOT FOUND)
---   · Variables de moneda resueltas internamente con SELECT por currencyCode
---     (era @curr_* de sesión — si el SP se llama desde otra sesión, serían NULL)
---   · OUT de sp_set_website_product_price capturado en v_price_id (variable local)
---     (era @price_id de sesión — inconsistente con el resto de variables locales)
---   · DROP PROCEDURE IF EXISTS (era DROP PROCEDURE — fallaba si ya no existía)
--- ============================================================
 DELIMITER $$
 CREATE PROCEDURE sp_populate_dynamic_full()
 BEGIN
-    -- Variables de control del bucle y de trabajo
+
     DECLARE v_product_id         INT UNSIGNED DEFAULT 1;
     DECLARE v_website_id         INT UNSIGNED;
     DECLARE v_brand_id           INT UNSIGNED;
     DECLARE v_catalog_id         INT UNSIGNED;
     DECLARE v_website_product_id INT UNSIGNED;
-    DECLARE v_price_id           INT UNSIGNED;    -- ← antes era @price_id (sesión)
+    DECLARE v_price_id           INT UNSIGNED;    
     DECLARE v_price              DECIMAL(14,2);
     DECLARE v_currency_id        INT UNSIGNED;
 
-    -- IDs de moneda resueltos desde la BD (no dependen de variables de sesión)
     DECLARE v_curr_crc INT UNSIGNED;
     DECLARE v_curr_cop INT UNSIGNED;
     DECLARE v_curr_mxn INT UNSIGNED;
@@ -1248,7 +1229,6 @@ BEGIN
     DECLARE v_curr_brl INT UNSIGNED;
     DECLARE v_curr_jpy INT UNSIGNED;
 
-    -- Carga de IDs de moneda al inicio del procedimiento
     SELECT currencyId INTO v_curr_crc FROM Currencies WHERE currencyCode = 'CRC' AND isDeleted = 0 LIMIT 1;
     SELECT currencyId INTO v_curr_cop FROM Currencies WHERE currencyCode = 'COP' AND isDeleted = 0 LIMIT 1;
     SELECT currencyId INTO v_curr_mxn FROM Currencies WHERE currencyCode = 'MXN' AND isDeleted = 0 LIMIT 1;
@@ -1259,17 +1239,13 @@ BEGIN
     SELECT currencyId INTO v_curr_jpy FROM Currencies WHERE currencyCode = 'JPY' AND isDeleted = 0 LIMIT 1;
 
     WHILE v_product_id <= 100 DO
-        -- Rotar a través de los 9 sitios web (1-9)
         SET v_website_id = ((v_product_id - 1) % 9) + 1;
 
         SELECT brandId INTO v_brand_id
           FROM Websites
          WHERE websiteId = v_website_id
          LIMIT 1;
-        -- ↑ Eliminado el SELECT de currencyId que era código muerto
-        --   (v_currency_id se sobreescribía de inmediato en el CASE)
 
-        -- Insertar en catálogo (etheriaProductId = v_product_id)
         CALL sp_upsert_product_catalog(
             v_product_id,
             v_brand_id,
@@ -1283,11 +1259,8 @@ BEGIN
             v_catalog_id
         );
 
-        -- Vincular a sitio web
         CALL sp_upsert_website_product(v_website_id, v_catalog_id, 0, 1, v_website_product_id);
 
-        -- Asignar precio y moneda local según sitio
-        -- Usa variables locales v_curr_* en lugar de variables de sesión @curr_*
         CASE v_website_id
             WHEN 1 THEN SET v_price = 25000.00;  SET v_currency_id = v_curr_crc;
             WHEN 2 THEN SET v_price = 200000.00; SET v_currency_id = v_curr_cop;
@@ -1303,7 +1276,7 @@ BEGIN
         CALL sp_set_website_product_price(
             v_website_product_id, v_price, v_currency_id,
             '2026-05-01', NULL,
-            v_price_id    -- ← antes era @price_id (variable de sesión)
+            v_price_id   
         );
 
         SET v_product_id = v_product_id + 1;
@@ -1312,7 +1285,7 @@ END$$
 DELIMITER ;
 
 CALL sp_populate_dynamic_full();
-DROP PROCEDURE IF EXISTS sp_populate_dynamic_full;  -- ← agregado IF EXISTS
+DROP PROCEDURE IF EXISTS sp_populate_dynamic_full;  
 
 -- 11. CLIENTES (Usando países existentes)
 CALL sp_register_customer('María',  'González', 'maria.gonzalez@crcr.com', 'hash123', '+506-8888-7777',   @country_cr, @cust1);
@@ -1327,3 +1300,306 @@ CALL sp_add_customer_address(@cust2, @addr_us_1, 'Office',      1, @cust_addr2);
 CALL sp_add_customer_address(@cust3, @addr_co_1, 'Apartamento', 1, @cust_addr3);
 CALL sp_add_customer_address(@cust4, @addr_mx_1, 'Casa',        1, @cust_addr4);
 CALL sp_add_customer_address(@cust5, @addr_ni_1, 'Casa',        1, @cust_addr5);
+
+-- Curiers:
+CALL sp_register_courier(
+    'DHL Express',
+    'ops@dhl.com',
+    '+1-800-225-5345',
+    'https://www.dhl.com/track?id={tracking}',
+    1,
+    @courier_dhl
+);
+
+CALL sp_register_courier(
+    'FedEx International',
+    'support@fedex.com',
+    '+1-800-463-3339',
+    'https://www.fedex.com/track?id={tracking}',
+    1,
+    @courier_fedex
+);
+
+CALL sp_register_courier(
+    'Correos de Costa Rica',
+    'correos@correos.go.cr',
+    '+506-2202-8000',
+    'https://correos.go.cr/rastreo?codigo={tracking}',
+    1,
+    @courier_correos_cr
+);
+
+CALL sp_register_courier(
+    'Servientrega',
+    'servicioalcliente@servientrega.com',
+    '+57-601-307-7050',
+    'https://www.servientrega.com/rastreo?guia={tracking}',
+    1,
+    @courier_servientrega
+);
+
+CALL sp_register_courier(
+    'Estafeta México',
+    'atencion@estafeta.com',
+    '+52-55-5950-7070',
+    'https://www.estafeta.com/rastreo/{tracking}',
+    1,
+    @courier_estafeta
+);
+
+-- Items
+-- Orden 1-A: 2 ítems
+CALL sp_place_order(
+    @cust1,
+    @site_1,
+    @cust_addr1,
+    @curr_crc,
+    @rate_crc,
+    '[{"websiteProductId":1,  "quantity":2, "unitPriceLocal":25000.00},
+      {"websiteProductId":10, "quantity":1, "unitPriceLocal":25000.00}]',
+    @order_1a
+);
+
+-- Orden 1-B: 3 ítems
+CALL sp_place_order(
+    @cust1,
+    @site_1,
+    @cust_addr1,
+    @curr_crc,
+    @rate_crc,
+    '[{"websiteProductId":19, "quantity":1, "unitPriceLocal":25000.00},
+      {"websiteProductId":28, "quantity":3, "unitPriceLocal":25000.00},
+      {"websiteProductId":37, "quantity":2, "unitPriceLocal":25000.00}]',
+    @order_1b
+);
+
+-- -------------------------------------------------------
+--  cust2 · John Smith · Estados Unidos
+--  site_4 (USD) · moneda @curr_usd · tasa @rate_usd
+--  websiteProductIds del site_4: 4, 13, 22, 31, 40
+-- -------------------------------------------------------
+
+-- Orden 2-A: 2 ítems
+CALL sp_place_order(
+    @cust2,
+    @site_4,
+    @cust_addr2,
+    @curr_usd,
+    @rate_usd,
+    '[{"websiteProductId":4,  "quantity":1, "unitPriceLocal":50.00},
+      {"websiteProductId":13, "quantity":2, "unitPriceLocal":50.00}]',
+    @order_2a
+);
+
+-- Orden 2-B: 3 ítems
+CALL sp_place_order(
+    @cust2,
+    @site_4,
+    @cust_addr2,
+    @curr_usd,
+    @rate_usd,
+    '[{"websiteProductId":22, "quantity":4, "unitPriceLocal":50.00},
+      {"websiteProductId":31, "quantity":1, "unitPriceLocal":50.00},
+      {"websiteProductId":40, "quantity":2, "unitPriceLocal":50.00}]',
+    @order_2b
+);
+
+-- -------------------------------------------------------
+--  cust3 · Carlos López · Colombia
+--  site_2 (COP) · moneda @curr_cop · tasa @rate_cop
+--  websiteProductIds del site_2: 2, 11, 20, 29, 38
+-- -------------------------------------------------------
+
+-- Orden 3-A: 2 ítems
+CALL sp_place_order(
+    @cust3,
+    @site_2,
+    @cust_addr3,
+    @curr_cop,
+    @rate_cop,
+    '[{"websiteProductId":2,  "quantity":1, "unitPriceLocal":200000.00},
+      {"websiteProductId":11, "quantity":2, "unitPriceLocal":200000.00}]',
+    @order_3a
+);
+
+-- Orden 3-B: 3 ítems
+CALL sp_place_order(
+    @cust3,
+    @site_2,
+    @cust_addr3,
+    @curr_cop,
+    @rate_cop,
+    '[{"websiteProductId":20, "quantity":1, "unitPriceLocal":200000.00},
+      {"websiteProductId":29, "quantity":2, "unitPriceLocal":200000.00},
+      {"websiteProductId":38, "quantity":1, "unitPriceLocal":200000.00}]',
+    @order_3b
+);
+
+-- -------------------------------------------------------
+--  cust4 · Ana García · México
+--  site_3 (MXN) · moneda @curr_mxn · tasa @rate_mxn
+--  websiteProductIds del site_3: 3, 12, 21, 30, 39
+-- -------------------------------------------------------
+
+-- Orden 4-A: 2 ítems
+CALL sp_place_order(
+    @cust4,
+    @site_3,
+    @cust_addr4,
+    @curr_mxn,
+    @rate_mxn,
+    '[{"websiteProductId":3,  "quantity":3, "unitPriceLocal":850.00},
+      {"websiteProductId":12, "quantity":2, "unitPriceLocal":850.00}]',
+    @order_4a
+);
+
+-- Orden 4-B: 3 ítems
+CALL sp_place_order(
+    @cust4,
+    @site_3,
+    @cust_addr4,
+    @curr_mxn,
+    @rate_mxn,
+    '[{"websiteProductId":21, "quantity":1, "unitPriceLocal":850.00},
+      {"websiteProductId":30, "quantity":4, "unitPriceLocal":850.00},
+      {"websiteProductId":39, "quantity":2, "unitPriceLocal":850.00}]',
+    @order_4b
+);
+
+-- -------------------------------------------------------
+--  cust5 · Luis Ramírez · Nicaragua
+--  site_5 (NIO) · moneda @curr_nio · tasa @rate_nio
+--  websiteProductIds del site_5: 5, 14, 23, 32, 41
+-- -------------------------------------------------------
+
+-- Orden 5-A: 2 ítems
+CALL sp_place_order(
+    @cust5,
+    @site_5,
+    @cust_addr5,
+    @curr_nio,
+    @rate_nio,
+    '[{"websiteProductId":5,  "quantity":2, "unitPriceLocal":900.00},
+      {"websiteProductId":14, "quantity":1, "unitPriceLocal":900.00}]',
+    @order_5a
+);
+
+-- Orden 5-B: 3 ítems
+CALL sp_place_order(
+    @cust5,
+    @site_5,
+    @cust_addr5,
+    @curr_nio,
+    @rate_nio,
+    '[{"websiteProductId":23, "quantity":1, "unitPriceLocal":900.00},
+      {"websiteProductId":32, "quantity":3, "unitPriceLocal":900.00},
+      {"websiteProductId":41, "quantity":2, "unitPriceLocal":900.00}]',
+    @order_5b
+);
+
+-- ordenes: 
+CALL sp_update_order_status(@order_1a, 'CONFIRMADA', NULL);
+CALL sp_update_order_status(@order_1b, 'CONFIRMADA', NULL);
+CALL sp_update_order_status(@order_2a, 'CONFIRMADA', NULL);
+CALL sp_update_order_status(@order_2b, 'CONFIRMADA', NULL);
+CALL sp_update_order_status(@order_3a, 'CONFIRMADA', NULL);
+CALL sp_update_order_status(@order_3b, 'CONFIRMADA', NULL);
+CALL sp_update_order_status(@order_4a, 'CONFIRMADA', NULL);
+CALL sp_update_order_status(@order_4b, 'CONFIRMADA', NULL);
+CALL sp_update_order_status(@order_5a, 'CONFIRMADA', NULL);
+CALL sp_update_order_status(@order_5b, 'CONFIRMADA', NULL);
+
+CALL sp_create_shipping_record(
+    @order_1a, @courier_correos_cr, 'CRCR-2026-000101',
+    3500.00, @curr_crc, @rate_crc,
+    '2026-05-15', @country_cr,
+    'CR-2026-00101',
+    @ship_1a
+);
+
+CALL sp_create_shipping_record(
+    @order_1b, @courier_correos_cr, 'CRCR-2026-000102',
+    3500.00, @curr_crc, @rate_crc,
+    '2026-05-16', @country_cr,
+    'CR-2026-00102',
+    @ship_1b
+);
+
+-- cust2 / US — FedEx International / USD
+CALL sp_create_shipping_record(
+    @order_2a, @courier_fedex, 'FEDX-2026-US-0201',
+    18.00, @curr_usd, @rate_usd,
+    '2026-05-10', @country_us,
+    'US-2026-00201',
+    @ship_2a
+);
+
+CALL sp_create_shipping_record(
+    @order_2b, @courier_fedex, 'FEDX-2026-US-0202',
+    22.50, @curr_usd, @rate_usd,
+    '2026-05-11', @country_us,
+    'US-2026-00202',
+    @ship_2b
+);
+
+-- cust3 / CO — Servientrega / COP
+CALL sp_create_shipping_record(
+    @order_3a, @courier_servientrega, 'SVRG-2026-CO-0301',
+    25000.00, @curr_cop, @rate_cop,
+    '2026-05-14', @country_co,
+    'CO-2026-00301',
+    @ship_3a
+);
+
+CALL sp_create_shipping_record(
+    @order_3b, @courier_servientrega, 'SVRG-2026-CO-0302',
+    25000.00, @curr_cop, @rate_cop,
+    '2026-05-15', @country_co,
+    'CO-2026-00302',
+    @ship_3b
+);
+
+-- cust4 / MX — Estafeta México / MXN
+CALL sp_create_shipping_record(
+    @order_4a, @courier_estafeta, 'ESTF-2026-MX-0401',
+    120.00, @curr_mxn, @rate_mxn,
+    '2026-05-12', @country_mx,
+    'MX-2026-00401',
+    @ship_4a
+);
+
+CALL sp_create_shipping_record(
+    @order_4b, @courier_estafeta, 'ESTF-2026-MX-0402',
+    150.00, @curr_mxn, @rate_mxn,
+    '2026-05-13', @country_mx,
+    'MX-2026-00402',
+    @ship_4b
+);
+
+-- cust5 / NI — DHL Express / NIO
+CALL sp_create_shipping_record(
+    @order_5a, @courier_dhl, 'DHL-2026-NI-0501',
+    180.00, @curr_nio, @rate_nio,
+    '2026-05-17', @country_ni,
+    'NI-2026-00501',
+    @ship_5a
+);
+
+CALL sp_create_shipping_record(
+    @order_5b, @courier_dhl, 'DHL-2026-NI-0502',
+    210.00, @curr_nio, @rate_nio,
+    '2026-05-18', @country_ni,
+    'NI-2026-00502',
+    @ship_5b
+);
+
+-- Entregados
+CALL sp_update_shipping_status(@ship_1a, 'ENTREGADO', '2026-05-13');
+CALL sp_update_shipping_status(@ship_2a, 'ENTREGADO', '2026-05-09');
+CALL sp_update_shipping_status(@ship_3a, 'ENTREGADO', '2026-05-13');
+CALL sp_update_shipping_status(@ship_5a, 'ENTREGADO', '2026-05-16');
+
+-- En tránsito
+CALL sp_update_shipping_status(@ship_1b, 'EN_TRANSITO', NULL);
+CALL sp_update_shipping_status(@ship_2b, 'EN_TRANSITO', NULL);
+CALL sp_update_shipping_status(@ship_4a, 'EN_TRANSITO', NULL);

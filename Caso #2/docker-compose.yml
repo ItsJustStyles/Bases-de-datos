@@ -85,6 +85,7 @@ services:
       - airflow_db
     environment:
       - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@airflow_db/airflow
+      - AIRFLOW__WEBSERVER__SECRET_KEY=caso2
     # IMPORTANTE: Aquí creamos el usuario para que puedas entrar
     command: >
       bash -c "airflow db init && 
@@ -102,6 +103,7 @@ services:
     environment:
       - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@airflow_db/airflow
       - AIRFLOW__CORE__EXECUTOR=LocalExecutor
+      - AIRFLOW__WEBSERVER__SECRET_KEY=caso2
       - _PIP_ADDITIONAL_DEPENDENCIES=pandas sqlalchemy psycopg2-binary mysql-connector-python
     ports:
       - "8080:8080"
@@ -120,6 +122,7 @@ services:
     environment:
       - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@airflow_db/airflow
       - AIRFLOW__CORE__EXECUTOR=LocalExecutor
+      - AIRFLOW__WEBSERVER__SECRET_KEY=caso2
       - _PIP_ADDITIONAL_DEPENDENCIES=pandas sqlalchemy psycopg2-binary mysql-connector-python
     volumes:
       - ./dags:/opt/airflow/dags
