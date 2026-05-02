@@ -1012,13 +1012,16 @@ def load_fact_ventas() -> None:
         cust_map = dict(zip(clientes["dynamic_cust_id"].astype(int), clientes["cliente_sk"].astype(int)))
 
         paises = read_sql("SELECT pais_sk, iso_code FROM dw.dim_pais", "dwh")
-        pais_map = dict(zip(paises["iso_code"], paises["pais_sk"].astype(int)))
+        # Esto eliminará los espacios como 'CR ' -> 'CR'
+        pais_map = {str(k).strip().upper(): v for k, v in zip(paises["iso_code"], paises["pais_sk"].astype(int))}
 
         marcas = read_sql("SELECT marca_sk, dynamic_brand_id FROM dw.dim_marca", "dwh")
         marca_map = dict(zip(marcas["dynamic_brand_id"].astype(int), marcas["marca_sk"].astype(int)))
 
         couriers = read_sql("SELECT courier_sk, dynamic_courier_id FROM dw.dim_courier", "dwh")
         courier_map = dict(zip(couriers["dynamic_courier_id"].astype(int), couriers["courier_sk"].astype(int)))
+
+        log.info(f"Contenido actual de pais_map: {pais_map}")
 
         # ── 4. Insertar filas ──────────────────────────────────────
         for _, row in dynamic_df.iterrows():
@@ -1031,7 +1034,8 @@ def load_fact_ventas() -> None:
                 pid         = int(row["etheria_product_id"]) if row["etheria_product_id"] is not None else -1
                 producto_sk = prod_map.get(pid, -1)
                 cliente_sk  = cust_map.get(int(row["dynamic_cust_id"]), -1)
-                pais_sk     = pais_map.get(row["pais_iso"], -1)
+                iso_origen = str(row["pais_iso"]).strip().upper() if row["pais_iso"] else "UNK"
+                pais_sk = pais_map.get(iso_origen, -1)
                 marca_sk    = marca_map.get(int(row["dynamic_brand_id"]), -1)
                 courier_sk  = courier_map.get(int(row["courier_id"]), -1) if row["courier_id"] else None
 
@@ -1180,7 +1184,7 @@ try:
     with DAG(
         dag_id="etl_holding_warehouse",
         description="ETL Etheria + Dynamic Brands → Data Warehouse",
-        schedule_interval="*/1 * * * *",      # Todos los días a las 03:00 UTC
+        schedule_interval="*/5 * * * *",      
         start_date=datetime(2026, 5, 1),
         catchup=False,
         tags=["etl", "holding", "warehouse"],

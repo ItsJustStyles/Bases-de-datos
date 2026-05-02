@@ -1146,17 +1146,17 @@ DECLARE
     -- Definimos un array de registros (Nombre, ISO)
     paises RECORD;
     v_lista_paises TEXT[][] := ARRAY[
-        ['Costa Rica', 'CRI'],
-        ['Estados Unidos', 'USA'],
-        ['Panamá', 'PAN'],
-        ['España', 'ESP'],
-        ['Colombia', 'COL'],
-        ['México', 'MEX'],
-        ['Alemania', 'DEU'],
-        ['Francia', 'FRA'],
-        ['Japón', 'JPN'],
-        ['Brasil', 'BRA'],
-        ['Nicaragua', 'NIC']
+        ['Costa Rica', 'CR'],
+        ['Estados Unidos', 'US'],
+        ['Panamá', 'PA'],
+        ['España', 'ES'],
+        ['Colombia', 'CO'],
+        ['México', 'MX'],
+        ['Alemania', 'DE'],
+        ['Francia', 'FR'],
+        ['Japón', 'JP'],
+        ['Brasil', 'BR'],
+        ['Nicaragua', 'NI']
     ];
     v_id INTEGER;
 BEGIN
@@ -1179,17 +1179,17 @@ DECLARE
     v_link_id    INTEGER;
 	
     v_mapeos TEXT[][] := ARRAY[
-        ['CRI', 'América Central'],
-        ['PAN', 'América Central'],
-        ['USA', 'América del Norte'],
-        ['MEX', 'América del Norte'],
-        ['BRA', 'América del Sur'],
-        ['COL', 'América del Sur'],
-        ['ESP', 'Europa Occidental'],
-        ['FRA', 'Europa Occidental'],
-        ['DEU', 'Europa Occidental'],
-        ['JPN', 'Asia Oriental'],
-        ['NIC', 'América Central']
+        ['CR', 'América Central'],
+        ['PA', 'América Central'],
+        ['US', 'América del Norte'],
+        ['MX', 'América del Norte'],
+        ['BR', 'América del Sur'],
+        ['CO', 'América del Sur'],
+        ['ES', 'Europa Occidental'],
+        ['FR', 'Europa Occidental'],
+        ['DE', 'Europa Occidental'],
+        ['JP', 'Asia Oriental'],
+        ['NI', 'América Central']
     ];
 BEGIN
     FOR i IN 1..array_length(v_mapeos, 1) LOOP
@@ -1217,21 +1217,21 @@ DECLARE
     v_admin_id   INTEGER;
     v_reg_dato   TEXT[];
     v_lista_admin TEXT[][] := ARRAY[
-        ['NIC', 'Costa Caribe Sur'], 
-        ['NIC', 'Managua'],
-        ['CRI', 'San José'],
-        ['CRI', 'Cartago'],
-        ['PAN', 'Panamá'],
-        ['MEX', 'Ciudad de México'],
-        ['MEX', 'Jalisco'],
-        ['COL', 'Bogotá D.C.'],
-        ['COL', 'Antioquia'],
-        ['BRA', 'São Paulo'],
-        ['USA', 'Florida'],
-        ['ESP', 'Madrid'],
-        ['FRA', 'Île-de-France'],
-        ['DEU', 'Baviera'],
-        ['JPN', 'Tokio']
+        ['NI', 'Costa Caribe Sur'], 
+        ['NI', 'Managua'],
+        ['CR', 'San José'],
+        ['CR', 'Cartago'],
+        ['PA', 'Panamá'],
+        ['MX', 'Ciudad de México'],
+        ['MX', 'Jalisco'],
+        ['CO', 'Bogotá D.C.'],
+        ['CO', 'Antioquia'],
+        ['BR', 'São Paulo'],
+        ['US', 'Florida'],
+        ['ES', 'Madrid'],
+        ['FR', 'Île-de-France'],
+        ['DE', 'Baviera'],
+        ['JP', 'Tokio']
     ];
 BEGIN
     FOR i IN 1..array_length(v_lista_admin, 1) LOOP
@@ -1254,23 +1254,23 @@ DECLARE
     v_admin_id INTEGER;
     v_city_id  INTEGER;
     v_datos TEXT[][] := ARRAY[
-        ['NIC', 'Costa Caribe Sur', 'Bluefields'],
-        ['NIC', 'Managua', 'Managua'],
+        ['NI', 'Costa Caribe Sur', 'Bluefields'],
+        ['NI', 'Managua', 'Managua'],
         
-        ['CRI', 'San José', 'Escazú'],
-        ['CRI', 'Cartago', 'Paraíso'], 
-        ['PAN', 'Panamá', 'Ciudad de Panamá'],
-        ['MEX', 'Ciudad de México', 'Polanco'],
-        ['MEX', 'Jalisco', 'Guadalajara'],
-        ['COL', 'Bogotá D.C.', 'Bogotá'],
-        ['COL', 'Antioquia', 'Medellín'],
-        ['BRA', 'São Paulo', 'Campinas'],
+        ['CR', 'San José', 'Escazú'],
+        ['CR', 'Cartago', 'Paraíso'], 
+        ['PA', 'Panamá', 'Ciudad de Panamá'],
+        ['MX', 'Ciudad de México', 'Polanco'],
+        ['MX', 'Jalisco', 'Guadalajara'],
+        ['CO', 'Bogotá D.C.', 'Bogotá'],
+        ['CO', 'Antioquia', 'Medellín'],
+        ['BR', 'São Paulo', 'Campinas'],
         
-        ['USA', 'Florida', 'Miami'],
-        ['ESP', 'Madrid', 'Madrid'],
-        ['FRA', 'Île-de-France', 'París'],
-        ['DEU', 'Baviera', 'Múnich'],
-        ['JPN', 'Tokio', 'Shibuya']
+        ['US', 'Florida', 'Miami'],
+        ['ES', 'Madrid', 'Madrid'],
+        ['FR', 'Île-de-France', 'París'],
+        ['DE', 'Baviera', 'Múnich'],
+        ['JP', 'Tokio', 'Shibuya']
     ];
 BEGIN
     FOR i IN 1..array_length(v_datos, 1) LOOP
@@ -1296,23 +1296,23 @@ DECLARE
     v_city_id    INTEGER;
     v_address_id INTEGER;
     v_datos TEXT[][] := ARRAY[
-        ['NIC', 'Costa Caribe Sur', 'Bluefields', 'Zona Portuaria, Muelle Municipal', 'HUB Logístico Etheria', '82100'],
-        ['NIC', 'Managua', 'Managua', 'Plaza España, 200m Sur', 'Oficinas Administrativas', '11001'],
+        ['NI', 'Costa Caribe Sur', 'Bluefields', 'Zona Portuaria, Muelle Municipal', 'HUB Logístico Etheria', '82100'],
+        ['NI', 'Managua', 'Managua', 'Plaza España, 200m Sur', 'Oficinas Administrativas', '11001'],
         
-        ['CRI', 'San José', 'Escazú', 'Multiplaza Escazú, Local 45', 'Showroom Dynamic', '10201'],
-        ['CRI', 'Cartago', 'Paraíso', 'Calle Principal, frente al Parque', 'Centro de Distribución Local', '30201'],
-        ['PAN', 'Panamá', 'Ciudad de Panamá', 'Costa del Este, Business Park', 'Torre B, Piso 10', '0801'],
-        ['MEX', 'Ciudad de México', 'Polanco', 'Av. Presidente Masaryk 123', 'Boutique de Lujo', '11550'],
-        ['MEX', 'Jalisco', 'Guadalajara', 'Puerta de Hierro', 'Edificio Corporativo', '45116'],
-        ['COL', 'Bogotá D.C.', 'Bogotá', 'Carrera 7 # 71-21', 'Torre Financiera', '110221'],
-        ['COL', 'Antioquia', 'Medellín', 'El Poblado, Carrera 43A', 'Milla de Oro', '050021'],
-        ['BRA', 'São Paulo', 'Campinas', 'Av. Guilherme Campos, 500', 'Parque Dom Pedro', '13087'],
+        ['CR', 'San José', 'Escazú', 'Multiplaza Escazú, Local 45', 'Showroom Dynamic', '10201'],
+        ['CR', 'Cartago', 'Paraíso', 'Calle Principal, frente al Parque', 'Centro de Distribución Local', '30201'],
+        ['PA', 'Panamá', 'Ciudad de Panamá', 'Costa del Este, Business Park', 'Torre B, Piso 10', '0801'],
+        ['MX', 'Ciudad de México', 'Polanco', 'Av. Presidente Masaryk 123', 'Boutique de Lujo', '11550'],
+        ['MX', 'Jalisco', 'Guadalajara', 'Puerta de Hierro', 'Edificio Corporativo', '45116'],
+        ['CO', 'Bogotá D.C.', 'Bogotá', 'Carrera 7 # 71-21', 'Torre Financiera', '110221'],
+        ['CO', 'Antioquia', 'Medellín', 'El Poblado, Carrera 43A', 'Milla de Oro', '050021'],
+        ['BR', 'São Paulo', 'Campinas', 'Av. Guilherme Campos, 500', 'Parque Dom Pedro', '13087'],
         
-        ['USA', 'Florida', 'Miami', 'Port of Miami, Termina G', 'Warehouse de Exportación', '33132'],
-        ['ESP', 'Madrid', 'Madrid', 'Calle de Velázquez 50', 'Sourcing Office', '28001'],
-        ['FRA', 'Île-de-France', 'París', 'Rue du Faubourg Saint-Honoré', 'Cosmética Premium', '75008'],
-        ['DEU', 'Baviera', 'Múnich', 'Marienplatz 1', 'Aceites Esenciales Bulk', '80331'],
-        ['JPN', 'Tokio', 'Shibuya', '2-24-12 Shibuya', 'Scramble Square', '150-6101']
+        ['US', 'Florida', 'Miami', 'Port of Miami, Termina G', 'Warehouse de Exportación', '33132'],
+        ['ES', 'Madrid', 'Madrid', 'Calle de Velázquez 50', 'Sourcing Office', '28001'],
+        ['FR', 'Île-de-France', 'París', 'Rue du Faubourg Saint-Honoré', 'Cosmética Premium', '75008'],
+        ['DE', 'Baviera', 'Múnich', 'Marienplatz 1', 'Aceites Esenciales Bulk', '80331'],
+        ['JP', 'Tokio', 'Shibuya', '2-24-12 Shibuya', 'Scramble Square', '150-6101']
     ];
 BEGIN
     FOR i IN 1..array_length(v_datos, 1) LOOP
@@ -1346,17 +1346,17 @@ DECLARE
     v_country_id INTEGER;
     v_curr_id    INTEGER;
     v_datos TEXT[][] := ARRAY[
-        ['NIC', 'NIO', 'C$', 'Córdoba'],
-        ['USA', 'USD', '$',  'Dólar Estadounidense'],
-        ['CRI', 'CRC', '₡',  'Colón Costarricense'],
-        ['PAN', 'PAB', 'B/.', 'Balboa'],
-        ['COL', 'COP', '$',  'Peso Colombiano'],
-        ['MEX', 'MXN', '$',  'Peso Mexicano'],
-        ['BRA', 'BRL', 'R$', 'Real Brasileño'],
-        ['ESP', 'EUR', '€',  'Euro'],
-        ['FRA', 'EUR', '€',  'Euro'],
-        ['DEU', 'EUR', '€',  'Euro'],
-        ['JPN', 'JPY', '¥',  'Yen Japonés']
+        ['NI', 'NIO', 'C$', 'Córdoba'],
+        ['US', 'USD', '$',  'Dólar Estadounidense'],
+        ['CR', 'CRC', '₡',  'Colón Costarricense'],
+        ['PA', 'PAB', 'B/.', 'Balboa'],
+        ['CO', 'COP', '$',  'Peso Colombiano'],
+        ['MX', 'MXN', '$',  'Peso Mexicano'],
+        ['BR', 'BRL', 'R$', 'Real Brasileño'],
+        ['ES', 'EUR', '€',  'Euro'],
+        ['FR', 'EUR', '€',  'Euro'],
+        ['DE', 'EUR', '€',  'Euro'],
+        ['JP', 'JPY', '¥',  'Yen Japonés']
     ];
 BEGIN
     FOR i IN 1..array_length(v_datos, 1) LOOP
@@ -1457,11 +1457,11 @@ DECLARE
     v_address_id  INTEGER;
     v_contact_id  INTEGER;
     v_datos TEXT[][] := ARRAY[
-        ['French Fragrance Corp', 'FRA', 'París', 'j.dupont@frenchfragrance.fr'],
-        ['Osaka Essential Oils', 'JPN', 'Shibuya', 'y.tanaka@tokyo-net.jp'],
-        ['Bavarian Healing Herbs', 'DEU', 'Múnich', 'sato@osaka-oils.jp'], 
-        ['Madrid Dermatological Sourcing', 'ESP', 'Madrid', 'e.white@globalshipping.us'],
-        ['Miami Export Logistics', 'USA', 'Miami', 'e.white@globalshipping.us']
+        ['French Fragrance Corp', 'FR', 'París', 'j.dupont@frenchfragrance.fr'],
+        ['Osaka Essential Oils', 'JP', 'Shibuya', 'y.tanaka@tokyo-net.jp'],
+        ['Bavarian Healing Herbs', 'DE', 'Múnich', 'sato@osaka-oils.jp'], 
+        ['Madrid Dermatological Sourcing', 'ES', 'Madrid', 'e.white@globalshipping.us'],
+        ['Miami Export Logistics', 'US', 'Miami', 'e.white@globalshipping.us']
     ];
 BEGIN
     FOR i IN 1..array_length(v_datos, 1) LOOP
@@ -1723,7 +1723,7 @@ BEGIN
     SELECT productId INTO v_prod_id FROM Products WHERE productName = 'Aceite de Lavanda de Provenza';
     SELECT supplierId INTO v_supp_id FROM Suppliers WHERE supplierName = 'French Fragrance Corp';
     SELECT unitId INTO v_unit_id FROM MeasurementUnits WHERE unitName = 'Litros';
-    SELECT countryId INTO v_country_id FROM Countries WHERE isoCode = 'FRA';
+    SELECT countryId INTO v_country_id FROM Countries WHERE isoCode = 'FR';
 
     CALL sp_register_bulk_purchase(
         v_prod_id, v_supp_id, 50.000, v_unit_id, 1200.00, v_country_id, 
@@ -1734,7 +1734,7 @@ BEGIN
     SELECT productId INTO v_prod_id FROM Products WHERE productName = 'Esencia de Sándalo de Japón';
     SELECT supplierId INTO v_supp_id FROM Suppliers WHERE supplierName = 'Osaka Essential Oils';
     SELECT unitId INTO v_unit_id FROM MeasurementUnits WHERE unitName = 'Litros';
-    SELECT countryId INTO v_country_id FROM Countries WHERE isoCode = 'JPN';
+    SELECT countryId INTO v_country_id FROM Countries WHERE isoCode = 'JP';
 
     CALL sp_register_bulk_purchase(
         v_prod_id, v_supp_id, 20.000, v_unit_id, 3500.00, v_country_id, 
@@ -1745,7 +1745,7 @@ BEGIN
     SELECT productId INTO v_prod_id FROM Products WHERE productName = 'Serum Facial de Algas Rojas';
     SELECT supplierId INTO v_supp_id FROM Suppliers WHERE supplierName = 'Madrid Dermatological Sourcing';
     SELECT unitId INTO v_unit_id FROM MeasurementUnits WHERE unitName = 'Unidades';
-    SELECT countryId INTO v_country_id FROM Countries WHERE isoCode = 'ESP';
+    SELECT countryId INTO v_country_id FROM Countries WHERE isoCode = 'ES';
 
     CALL sp_register_bulk_purchase(
         v_prod_id, v_supp_id, 500.000, v_unit_id, 8500.00, v_country_id, 
@@ -1756,7 +1756,7 @@ BEGIN
     SELECT productId INTO v_prod_id FROM Products WHERE productName = 'Cápsulas de Cúrcuma Longa';
     SELECT supplierId INTO v_supp_id FROM Suppliers WHERE supplierName = 'Bavarian Healing Herbs';
     SELECT unitId INTO v_unit_id FROM MeasurementUnits WHERE unitName = 'Unidades';
-    SELECT countryId INTO v_country_id FROM Countries WHERE isoCode = 'DEU';
+    SELECT countryId INTO v_country_id FROM Countries WHERE isoCode = 'DE';
 
     CALL sp_register_bulk_purchase(
         v_prod_id, v_supp_id, 1000.000, v_unit_id, 4000.00, v_country_id, 
@@ -1767,7 +1767,7 @@ BEGIN
     SELECT productId INTO v_prod_id FROM Products WHERE productName = 'Set de Bienestar "Zen Spirit"';
     SELECT supplierId INTO v_supp_id FROM Suppliers WHERE supplierName = 'Miami Export Logistics';
     SELECT unitId INTO v_unit_id FROM MeasurementUnits WHERE unitName = 'Set';
-    SELECT countryId INTO v_country_id FROM Countries WHERE isoCode = 'USA';
+    SELECT countryId INTO v_country_id FROM Countries WHERE isoCode = 'US';
 
     CALL sp_register_bulk_purchase(
         v_prod_id, v_supp_id, 100.000, v_unit_id, 5500.00, v_country_id, 
@@ -1891,7 +1891,7 @@ DECLARE
 BEGIN
     -- 1. Despacho a MÉXICO: Serum Facial de Algas Rojas
     SELECT productId INTO v_prod_id FROM Products WHERE productName = 'Serum Facial de Algas Rojas';
-    SELECT countryId INTO v_country_id FROM Countries WHERE isoCode = 'MEX';
+    SELECT countryId INTO v_country_id FROM Countries WHERE isoCode = 'MX';
     
     v_order_num := NULL; -- Limpiar para el siguiente INOUT
     CALL sp_create_dispatch_order(v_prod_id, 100.000::DECIMAL, v_country_id, 12.5000::DECIMAL, v_dispatch_id, v_order_num);
@@ -1899,7 +1899,7 @@ BEGIN
 
     -- 2. Despacho a PANAMÁ: Jabón de Carbón Activado y Menta
     SELECT productId INTO v_prod_id FROM Products WHERE productName = 'Jabón de Carbón Activado y Menta';
-    SELECT countryId INTO v_country_id FROM Countries WHERE isoCode = 'PAN';
+    SELECT countryId INTO v_country_id FROM Countries WHERE isoCode = 'PA';
     
     v_order_num := NULL;
     CALL sp_create_dispatch_order(v_prod_id, 250.000::DECIMAL, v_country_id, 4.2500::DECIMAL, v_dispatch_id, v_order_num);
@@ -1907,7 +1907,7 @@ BEGIN
 
     -- 3. Despacho a COLOMBIA: Cápsulas de Cúrcuma Longa
     SELECT productId INTO v_prod_id FROM Products WHERE productName = 'Cápsulas de Cúrcuma Longa';
-    SELECT countryId INTO v_country_id FROM Countries WHERE isoCode = 'COL';
+    SELECT countryId INTO v_country_id FROM Countries WHERE isoCode = 'CO';
     
     v_order_num := NULL;
     CALL sp_create_dispatch_order(v_prod_id, 500.000::DECIMAL, v_country_id, 0.1500::DECIMAL, v_dispatch_id, v_order_num);
@@ -1915,7 +1915,7 @@ BEGIN
 
     -- 4. Despacho a BRASIL: Perfume "Bruma del Desierto"
     SELECT productId INTO v_prod_id FROM Products WHERE productName = 'Perfume "Bruma del Desierto" (Eau de Parfum)';
-    SELECT countryId INTO v_country_id FROM Countries WHERE isoCode = 'BRA';
+    SELECT countryId INTO v_country_id FROM Countries WHERE isoCode = 'BR';
     
     v_order_num := NULL;
     CALL sp_create_dispatch_order(v_prod_id, 75.000::DECIMAL, v_country_id, 45.0000::DECIMAL, v_dispatch_id, v_order_num);
@@ -1923,7 +1923,7 @@ BEGIN
 
     -- 5. Segundo Despacho a COSTA RICA 
     SELECT productId INTO v_prod_id FROM Products WHERE productName = 'Crema Hidratante de Karité Dorado';
-    SELECT countryId INTO v_country_id FROM Countries WHERE isoCode = 'CRI';
+    SELECT countryId INTO v_country_id FROM Countries WHERE isoCode = 'CR';
     
     v_order_num := NULL;
     CALL sp_create_dispatch_order(v_prod_id, 120.000::DECIMAL, v_country_id, 18.0000::DECIMAL, v_dispatch_id, v_order_num);
@@ -1973,7 +1973,7 @@ BEGIN
     -- Buscamos el producto y la orden pendiente
     SELECT productId INTO v_prod_id FROM Products WHERE productName = 'Aceite de Lavanda de Provenza';
     SELECT dispatchOrderId INTO v_dispatch_id FROM DispatchOrders 
-     WHERE productId = v_prod_id AND externalOrderNumber LIKE 'EXP-CRI-%' 
+     WHERE productId = v_prod_id AND externalOrderNumber LIKE 'EXP-CR-%' 
      ORDER BY createdAt DESC LIMIT 1;
 
     IF v_dispatch_id IS NOT NULL THEN

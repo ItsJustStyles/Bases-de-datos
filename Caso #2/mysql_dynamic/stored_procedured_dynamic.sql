@@ -58,7 +58,7 @@ END$$
 -- ============================================================
 CREATE PROCEDURE sp_upsert_country(
     IN  p_countryName   VARCHAR(100),
-    IN  p_isoCode       CHAR(3),
+    IN  p_isoCode       CHAR(2),
     IN  p_isActive      TINYINT(1),
     OUT p_countryId     INT UNSIGNED
 )
@@ -1086,17 +1086,17 @@ DELIMITER ;
 -- LLenado de tablas:
 
 -- 1. PAISES (11 países idénticos a Etheria)
-CALL sp_upsert_country('Costa Rica',      'CRI', 1, @country_cr);
-CALL sp_upsert_country('Estados Unidos',  'USA', 1, @country_us);
-CALL sp_upsert_country('Panamá',          'PAN', 1, @country_pa);
-CALL sp_upsert_country('España',          'ESP', 1, @country_es);
-CALL sp_upsert_country('Colombia',        'COL', 1, @country_co);
-CALL sp_upsert_country('México',          'MEX', 1, @country_mx);
-CALL sp_upsert_country('Alemania',        'DEU', 1, @country_de);
-CALL sp_upsert_country('Francia',         'FRA', 1, @country_fr);
-CALL sp_upsert_country('Japón',           'JPN', 1, @country_jp);
-CALL sp_upsert_country('Brasil',          'BRA', 1, @country_br);
-CALL sp_upsert_country('Nicaragua',       'NIC', 1, @country_ni);
+CALL sp_upsert_country('Costa Rica',      'CR', 1, @country_cr);
+CALL sp_upsert_country('Estados Unidos',  'US', 1, @country_us);
+CALL sp_upsert_country('Panamá',          'PA', 1, @country_pa);
+CALL sp_upsert_country('España',          'ES', 1, @country_es);
+CALL sp_upsert_country('Colombia',        'CO', 1, @country_co);
+CALL sp_upsert_country('México',          'MX', 1, @country_mx);
+CALL sp_upsert_country('Alemania',        'DE', 1, @country_de);
+CALL sp_upsert_country('Francia',         'FR', 1, @country_fr);
+CALL sp_upsert_country('Japón',           'JP', 1, @country_jp);
+CALL sp_upsert_country('Brasil',          'BR', 1, @country_br);
+CALL sp_upsert_country('Nicaragua',       'NI', 1, @country_ni);
 
 -- 2. MONEDAS (11 monedas idénticas a Etheria)
 CALL sp_upsert_currency('NIO', 'C$',  'Córdoba',               @country_ni, @curr_nio);
