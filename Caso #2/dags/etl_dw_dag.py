@@ -1180,7 +1180,7 @@ try:
     with DAG(
         dag_id="etl_holding_warehouse",
         description="ETL Etheria + Dynamic Brands → Data Warehouse",
-        schedule_interval="0 3 * * *",      # Todos los días a las 03:00 UTC
+        schedule_interval="*/1 * * * *",      # Todos los días a las 03:00 UTC
         start_date=datetime(2026, 5, 1),
         catchup=False,
         tags=["etl", "holding", "warehouse"],
