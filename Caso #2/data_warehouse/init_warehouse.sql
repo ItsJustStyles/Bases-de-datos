@@ -1,18 +1,7 @@
--- ============================================================
---  Data Warehouse — Etheria Global + Dynamic Brands
---  Engine  : PostgreSQL (mismo contenedor data_warehouse)
---  Esquema : dw + etl
---  Ejecutar: conectado a la DB "warehouse"
--- ============================================================
-
--- ── Crear esquemas ──────────────────────────────────────────
 CREATE SCHEMA IF NOT EXISTS dw;
 CREATE SCHEMA IF NOT EXISTS etl;
 
--- ============================================================
---  DIMENSIÓN FECHA
---  Se llena con generate_series al final del script
--- ============================================================
+
 CREATE TABLE IF NOT EXISTS dw.dim_fecha (
     fecha_sk        SERIAL      PRIMARY KEY,
     fecha           DATE        NOT NULL UNIQUE,
@@ -27,7 +16,6 @@ CREATE TABLE IF NOT EXISTS dw.dim_fecha (
     es_fin_semana   BOOLEAN     NOT NULL DEFAULT FALSE
 );
 
--- Poblar dim_fecha 2020-01-01 → 2030-12-31
 INSERT INTO dw.dim_fecha (
     fecha, anio, trimestre, mes, nombre_mes,
     semana_iso, dia_mes, dia_semana, nombre_dia, es_fin_semana
@@ -38,7 +26,7 @@ SELECT
     EXTRACT(QUARTER FROM d)::SMALLINT,
     EXTRACT(MONTH FROM d)::SMALLINT,
     TO_CHAR(d, 'TMMonth'),
-    EXTRACT(ISOYEAR FROM d)::SMALLINT,  -- semana ISO
+    EXTRACT(ISOYEAR FROM d)::SMALLINT,  
     EXTRACT(DAY   FROM d)::SMALLINT,
     EXTRACT(ISODOW FROM d)::SMALLINT,
     TO_CHAR(d, 'TMDay'),
@@ -46,9 +34,6 @@ SELECT
 FROM generate_series('2020-01-01'::DATE, '2030-12-31'::DATE, '1 day') AS d
 ON CONFLICT (fecha) DO NOTHING;
 
--- ============================================================
---  DIMENSIÓN PAÍS
--- ============================================================
 CREATE TABLE IF NOT EXISTS dw.dim_pais (
     pais_sk         SERIAL      PRIMARY KEY,
     iso_code        CHAR(3)     NOT NULL UNIQUE,
@@ -61,9 +46,6 @@ INSERT INTO dw.dim_pais (pais_sk, iso_code, country_name)
 VALUES (-1, 'UNK', 'Desconocido')
 ON CONFLICT DO NOTHING;
 
--- ============================================================
---  DIMENSIÓN PRODUCTO  (SCD Tipo 2)
--- ============================================================
 CREATE TABLE IF NOT EXISTS dw.dim_producto (
     producto_sk         SERIAL          PRIMARY KEY,
     etheria_product_id  INTEGER         NOT NULL,
@@ -88,9 +70,6 @@ INSERT INTO dw.dim_producto (producto_sk, etheria_product_id, product_name, is_c
 VALUES (-1, -1, 'Desconocido', TRUE)
 ON CONFLICT DO NOTHING;
 
--- ============================================================
---  DIMENSIÓN CLIENTE  (SCD Tipo 2)
--- ============================================================
 CREATE TABLE IF NOT EXISTS dw.dim_cliente (
     cliente_sk          SERIAL          PRIMARY KEY,
     dynamic_cust_id     INTEGER         NOT NULL,
@@ -107,9 +86,6 @@ INSERT INTO dw.dim_cliente (cliente_sk, dynamic_cust_id, full_name, is_current)
 VALUES (-1, -1, 'Desconocido', TRUE)
 ON CONFLICT DO NOTHING;
 
--- ============================================================
---  DIMENSIÓN PROVEEDOR
--- ============================================================
 CREATE TABLE IF NOT EXISTS dw.dim_proveedor (
     proveedor_sk            SERIAL          PRIMARY KEY,
     etheria_supplier_id     INTEGER         NOT NULL UNIQUE,
@@ -123,9 +99,6 @@ INSERT INTO dw.dim_proveedor (proveedor_sk, etheria_supplier_id, supplier_name)
 VALUES (-1, -1, 'Desconocido')
 ON CONFLICT DO NOTHING;
 
--- ============================================================
---  DIMENSIÓN MARCA
--- ============================================================
 CREATE TABLE IF NOT EXISTS dw.dim_marca (
     marca_sk            SERIAL          PRIMARY KEY,
     dynamic_brand_id    INTEGER         NOT NULL UNIQUE,
@@ -138,9 +111,6 @@ INSERT INTO dw.dim_marca (marca_sk, dynamic_brand_id, brand_name)
 VALUES (-1, -1, 'Desconocido')
 ON CONFLICT DO NOTHING;
 
--- ============================================================
---  DIMENSIÓN COURIER
--- ============================================================
 CREATE TABLE IF NOT EXISTS dw.dim_courier (
     courier_sk          SERIAL          PRIMARY KEY,
     dynamic_courier_id  INTEGER         NOT NULL UNIQUE,
@@ -153,10 +123,6 @@ INSERT INTO dw.dim_courier (courier_sk, dynamic_courier_id, courier_name)
 VALUES (-1, -1, 'Desconocido')
 ON CONFLICT DO NOTHING;
 
--- ============================================================
---  FACT VENTAS
---  Granularidad: 1 fila por ítem de orden
--- ============================================================
 CREATE TABLE IF NOT EXISTS dw.fact_ventas (
     venta_sk                BIGSERIAL   PRIMARY KEY,
     -- Dimensiones
@@ -188,10 +154,6 @@ CREATE TABLE IF NOT EXISTS dw.fact_ventas (
     UNIQUE (dynamic_order_item_id)          -- idempotencia
 );
 
--- ============================================================
---  FACT INVENTARIO
---  Granularidad: 1 fila por movimiento en el HUB de Etheria
--- ============================================================
 CREATE TABLE IF NOT EXISTS dw.fact_inventario (
     inv_sk              BIGSERIAL   PRIMARY KEY,
     fecha_sk            INTEGER     NOT NULL REFERENCES dw.dim_fecha(fecha_sk),
@@ -206,10 +168,6 @@ CREATE TABLE IF NOT EXISTS dw.fact_inventario (
     UNIQUE (etheria_hub_id)                     -- idempotencia
 );
 
--- ============================================================
---  FACT COMPRAS
---  Granularidad: 1 fila por BulkPurchase de Etheria
--- ============================================================
 CREATE TABLE IF NOT EXISTS dw.fact_compras (
     compra_sk           BIGSERIAL   PRIMARY KEY,
     fecha_sk            INTEGER     NOT NULL REFERENCES dw.dim_fecha(fecha_sk),
@@ -228,9 +186,6 @@ CREATE TABLE IF NOT EXISTS dw.fact_compras (
     UNIQUE (etheria_bulk_id)                    -- idempotencia
 );
 
--- ============================================================
---  TABLA AUDIT LOG (esquema etl)
--- ============================================================
 CREATE TABLE IF NOT EXISTS etl.audit_log (
     log_id          BIGSERIAL   PRIMARY KEY,
     dag_name        VARCHAR(100) NOT NULL,
@@ -248,9 +203,6 @@ CREATE TABLE IF NOT EXISTS etl.audit_log (
     created_at      TIMESTAMP   NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- ============================================================
---  ÍNDICES para rendimiento en consultas BI
--- ============================================================
 CREATE INDEX IF NOT EXISTS idx_fv_fecha    ON dw.fact_ventas(fecha_sk);
 CREATE INDEX IF NOT EXISTS idx_fv_producto ON dw.fact_ventas(producto_sk);
 CREATE INDEX IF NOT EXISTS idx_fv_cliente  ON dw.fact_ventas(cliente_sk);
@@ -260,9 +212,3 @@ CREATE INDEX IF NOT EXISTS idx_fi_fecha    ON dw.fact_inventario(fecha_sk);
 CREATE INDEX IF NOT EXISTS idx_fi_producto ON dw.fact_inventario(producto_sk);
 CREATE INDEX IF NOT EXISTS idx_fc_fecha    ON dw.fact_compras(fecha_sk);
 CREATE INDEX IF NOT EXISTS idx_fc_prod     ON dw.fact_compras(producto_sk);
-
--- ============================================================
---  FIN DEL SCRIPT — conectar Metabase al contenedor
---  dwh_central  host: data_warehouse  port: 5432  db: warehouse
---  user: analytics_user  pass: dwh_password
--- ============================================================

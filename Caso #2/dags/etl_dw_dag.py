@@ -1,31 +1,3 @@
-"""
-============================================================
- ETL — Etheria Global + Dynamic Brands → Data Warehouse
- Archivo  : etl.py
- Destino  : dags/etl.py  (dentro del volumen de Airflow)
- Motor DW : PostgreSQL  (data_warehouse:5432 / warehouse)
- Fuentes  : etheria_db:5432 (PostgreSQL) · dynamic_mysql:3306 (MySQL)
- Creado   : 2026-05-01
-============================================================
-
-Ejecutar directamente (fuera de Airflow):
-    python etl.py
-
-Como DAG de Airflow usa el PythonOperator y corre cada tarea
-en secuencia respetando las dependencias de claves foráneas.
-
-Orden de carga garantizado:
-  1. dim_pais
-  2. dim_proveedor
-  3. dim_marca
-  4. dim_courier
-  5. dim_cliente
-  6. dim_producto    (SCD Tipo 2)
-  7. fact_compras
-  8. fact_inventario
-  9. fact_ventas
-"""
-
 from __future__ import annotations
 
 import logging
@@ -1184,7 +1156,7 @@ try:
     with DAG(
         dag_id="etl_holding_warehouse",
         description="ETL Etheria + Dynamic Brands → Data Warehouse",
-        schedule_interval="*/5 * * * *",      
+        schedule_interval="*/1 * * * *",      
         start_date=datetime(2026, 5, 1),
         catchup=False,
         tags=["etl", "holding", "warehouse"],

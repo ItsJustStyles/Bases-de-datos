@@ -1,30 +1,3 @@
--- ============================================================
---  Etheria Global DB — Stored Procedures
---  Engine  : PostgreSQL 18
---  DB      : etheria_global_db
---  Created : 2026-05-01
---
---  CONVENCIONES
---    · Todos los SPs usan LANGUAGE plpgsql
---    · Parámetros de entrada      : p_  (IN)
---    · Parámetros INOUT (retorno) : p_  (INOUT)
---    · Variables locales          : v_
---    · Cada SP registra actividad en ProcessLog vía sp_log_event
---    · Los SPs de escritura con múltiples tablas usan transacción
---      explícita (BEGIN … COMMIT / EXCEPTION … ROLLBACK)
---
---  COHERENCIA CON DYNAMIC BRANDS
---    · Countries.isoCode     = Dynamic.Countries.isoCode
---    · Currencies.currencyCode = Dynamic.Currencies.currencyCode
---    · Products.productId    → Dynamic.ProductCatalog.etheriaProductId
---    · DispatchOrders.dispatchOrderId → Dynamic.Orders.etheriaDispatchOrderId
--- ============================================================
-
--- ============================================================
---  HELPER  sp_log_event
---  Inserta un evento en ProcessLog.
---  Usado internamente por todos los demás SPs.
--- ============================================================
 CREATE OR REPLACE PROCEDURE sp_log_event(
     IN p_eventSource        VARCHAR(150),
     IN p_eventType          VARCHAR(60),
@@ -1414,6 +1387,121 @@ BEGIN
             RAISE WARNING 'No se encontró la moneda % para insertar su tasa de cambio', v_datos[i][1];
         END IF;
     END LOOP;
+
+    -- Registros pasados:
+
+    -- ENERO 2026
+    SELECT currencyId INTO v_curr_id FROM Currencies WHERE currencyCode = 'NIO' AND isDeleted = FALSE;
+    CALL sp_upsert_exchange_rate(v_curr_id, 0.02770, '2026-01-01', 'BCN',         v_rate_id);
+
+    SELECT currencyId INTO v_curr_id FROM Currencies WHERE currencyCode = 'USD' AND isDeleted = FALSE;
+    CALL sp_upsert_exchange_rate(v_curr_id, 1.00000, '2026-01-01', 'FED',         v_rate_id);
+
+    SELECT currencyId INTO v_curr_id FROM Currencies WHERE currencyCode = 'CRC' AND isDeleted = FALSE;
+    CALL sp_upsert_exchange_rate(v_curr_id, 0.00198, '2026-01-01', 'BCCR',        v_rate_id);
+
+    SELECT currencyId INTO v_curr_id FROM Currencies WHERE currencyCode = 'PAB' AND isDeleted = FALSE;
+    CALL sp_upsert_exchange_rate(v_curr_id, 1.00000, '2026-01-01', 'Banco Nac',   v_rate_id);
+
+    SELECT currencyId INTO v_curr_id FROM Currencies WHERE currencyCode = 'COP' AND isDeleted = FALSE;
+    CALL sp_upsert_exchange_rate(v_curr_id, 0.00024, '2026-01-01', 'BanRep',      v_rate_id);
+
+    SELECT currencyId INTO v_curr_id FROM Currencies WHERE currencyCode = 'MXN' AND isDeleted = FALSE;
+    CALL sp_upsert_exchange_rate(v_curr_id, 0.05750, '2026-01-01', 'Banxico',     v_rate_id);
+
+    SELECT currencyId INTO v_curr_id FROM Currencies WHERE currencyCode = 'BRL' AND isDeleted = FALSE;
+    CALL sp_upsert_exchange_rate(v_curr_id, 0.19500, '2026-01-01', 'BCB',         v_rate_id);
+
+    SELECT currencyId INTO v_curr_id FROM Currencies WHERE currencyCode = 'EUR' AND isDeleted = FALSE;
+    CALL sp_upsert_exchange_rate(v_curr_id, 1.07800, '2026-01-01', 'BCE',         v_rate_id);
+
+    SELECT currencyId INTO v_curr_id FROM Currencies WHERE currencyCode = 'JPY' AND isDeleted = FALSE;
+    CALL sp_upsert_exchange_rate(v_curr_id, 0.00660, '2026-01-01', 'BoJ',         v_rate_id);
+
+    -- FEBRERO 2026
+    SELECT currencyId INTO v_curr_id FROM Currencies WHERE currencyCode = 'NIO' AND isDeleted = FALSE;
+    CALL sp_upsert_exchange_rate(v_curr_id, 0.02775, '2026-02-01', 'BCN', v_rate_id);
+
+    SELECT currencyId INTO v_curr_id FROM Currencies WHERE currencyCode = 'USD' AND isDeleted = FALSE;
+    CALL sp_upsert_exchange_rate(v_curr_id, 1.00000, '2026-02-01', 'FED', v_rate_id);
+
+    SELECT currencyId INTO v_curr_id FROM Currencies WHERE currencyCode = 'CRC' AND isDeleted = FALSE;
+    CALL sp_upsert_exchange_rate(v_curr_id, 0.00196, '2026-02-01', 'BCCR', v_rate_id);
+
+    SELECT currencyId INTO v_curr_id FROM Currencies WHERE currencyCode = 'PAB' AND isDeleted = FALSE;
+    CALL sp_upsert_exchange_rate(v_curr_id, 1.00000, '2026-02-01', 'Banco Nac', v_rate_id);
+
+    SELECT currencyId INTO v_curr_id FROM Currencies WHERE currencyCode = 'COP' AND isDeleted = FALSE;
+    CALL sp_upsert_exchange_rate(v_curr_id, 0.00025, '2026-02-01', 'BanRep', v_rate_id);
+
+    SELECT currencyId INTO v_curr_id FROM Currencies WHERE currencyCode = 'MXN' AND isDeleted = FALSE;
+    CALL sp_upsert_exchange_rate(v_curr_id, 0.05800, '2026-02-01', 'Banxico', v_rate_id);
+
+    SELECT currencyId INTO v_curr_id FROM Currencies WHERE currencyCode = 'BRL' AND isDeleted = FALSE;
+    CALL sp_upsert_exchange_rate(v_curr_id, 0.19800, '2026-02-01', 'BCB', v_rate_id);
+
+    SELECT currencyId INTO v_curr_id FROM Currencies WHERE currencyCode = 'EUR' AND isDeleted = FALSE;
+    CALL sp_upsert_exchange_rate(v_curr_id, 1.08200, '2026-02-01', 'BCE', v_rate_id);
+
+    SELECT currencyId INTO v_curr_id FROM Currencies WHERE currencyCode = 'JPY' AND isDeleted = FALSE;
+    CALL sp_upsert_exchange_rate(v_curr_id, 0.00675, '2026-02-01', 'BoJ', v_rate_id);
+
+    -- MARZO 2026
+    SELECT currencyId INTO v_curr_id FROM Currencies WHERE currencyCode = 'NIO' AND isDeleted = FALSE;
+    CALL sp_upsert_exchange_rate(v_curr_id, 0.02780, '2026-03-01', 'BCN', v_rate_id);
+
+    SELECT currencyId INTO v_curr_id FROM Currencies WHERE currencyCode = 'USD' AND isDeleted = FALSE;
+    CALL sp_upsert_exchange_rate(v_curr_id, 1.00000, '2026-03-01', 'FED', v_rate_id);
+
+    SELECT currencyId INTO v_curr_id FROM Currencies WHERE currencyCode = 'CRC' AND isDeleted = FALSE;
+    CALL sp_upsert_exchange_rate(v_curr_id, 0.00199, '2026-03-01', 'BCCR', v_rate_id);
+
+    SELECT currencyId INTO v_curr_id FROM Currencies WHERE currencyCode = 'PAB' AND isDeleted = FALSE;
+    CALL sp_upsert_exchange_rate(v_curr_id, 1.00000, '2026-03-01', 'Banco Nac', v_rate_id);
+
+    SELECT currencyId INTO v_curr_id FROM Currencies WHERE currencyCode = 'COP' AND isDeleted = FALSE;
+    CALL sp_upsert_exchange_rate(v_curr_id, 0.00025, '2026-03-01', 'BanRep', v_rate_id);
+
+    SELECT currencyId INTO v_curr_id FROM Currencies WHERE currencyCode = 'MXN' AND isDeleted = FALSE;
+    CALL sp_upsert_exchange_rate(v_curr_id, 0.05820, '2026-03-01', 'Banxico', v_rate_id);
+
+    SELECT currencyId INTO v_curr_id FROM Currencies WHERE currencyCode = 'BRL' AND isDeleted = FALSE;
+    CALL sp_upsert_exchange_rate(v_curr_id, 0.20100, '2026-03-01', 'BCB', v_rate_id);
+
+    SELECT currencyId INTO v_curr_id FROM Currencies WHERE currencyCode = 'EUR' AND isDeleted = FALSE;
+    CALL sp_upsert_exchange_rate(v_curr_id, 1.08500, '2026-03-01', 'BCE', v_rate_id);
+
+    SELECT currencyId INTO v_curr_id FROM Currencies WHERE currencyCode = 'JPY' AND isDeleted = FALSE;
+    CALL sp_upsert_exchange_rate(v_curr_id, 0.00670, '2026-03-01', 'BoJ', v_rate_id);
+
+    -- ABRIL 2026
+    SELECT currencyId INTO v_curr_id FROM Currencies WHERE currencyCode = 'NIO' AND isDeleted = FALSE;
+    CALL sp_upsert_exchange_rate(v_curr_id, 0.02782, '2026-04-01', 'BCN', v_rate_id);
+
+    SELECT currencyId INTO v_curr_id FROM Currencies WHERE currencyCode = 'USD' AND isDeleted = FALSE;
+    CALL sp_upsert_exchange_rate(v_curr_id, 1.00000, '2026-04-01', 'FED', v_rate_id);
+
+    SELECT currencyId INTO v_curr_id FROM Currencies WHERE currencyCode = 'CRC' AND isDeleted = FALSE;
+    CALL sp_upsert_exchange_rate(v_curr_id, 0.00200, '2026-04-01', 'BCCR', v_rate_id);
+
+    SELECT currencyId INTO v_curr_id FROM Currencies WHERE currencyCode = 'PAB' AND isDeleted = FALSE;
+    CALL sp_upsert_exchange_rate(v_curr_id, 1.00000, '2026-04-01', 'Banco Nac', v_rate_id);
+
+    SELECT currencyId INTO v_curr_id FROM Currencies WHERE currencyCode = 'COP' AND isDeleted = FALSE;
+    CALL sp_upsert_exchange_rate(v_curr_id, 0.00025, '2026-04-01', 'BanRep', v_rate_id);
+
+    SELECT currencyId INTO v_curr_id FROM Currencies WHERE currencyCode = 'MXN' AND isDeleted = FALSE;
+    CALL sp_upsert_exchange_rate(v_curr_id, 0.05880, '2026-04-01', 'Banxico', v_rate_id);
+
+    SELECT currencyId INTO v_curr_id FROM Currencies WHERE currencyCode = 'BRL' AND isDeleted = FALSE;
+    CALL sp_upsert_exchange_rate(v_curr_id, 0.20000, '2026-04-01', 'BCB', v_rate_id);
+
+    SELECT currencyId INTO v_curr_id FROM Currencies WHERE currencyCode = 'EUR' AND isDeleted = FALSE;
+    CALL sp_upsert_exchange_rate(v_curr_id, 1.08000, '2026-04-01', 'BCE', v_rate_id);
+
+    SELECT currencyId INTO v_curr_id FROM Currencies WHERE currencyCode = 'JPY' AND isDeleted = FALSE;
+    CALL sp_upsert_exchange_rate(v_curr_id, 0.00668, '2026-04-01', 'BoJ', v_rate_id);
+
 END $$;
 
 -- persons:
@@ -1588,7 +1676,105 @@ DECLARE
         ['Caja de Regalo "Ritual de Sueño"', 'Kits de Regalo', 'Set', '0.004', '1.80'],
         
         -- Bebidas Saludables
-        ['Elixir de Té Blanco y Jengibre', 'Bebidas Saludables', 'Mililitros', '0.0006', '0.60']
+        ['Elixir de Té Blanco y Jengibre', 'Bebidas Saludables', 'Mililitros', '0.0006', '0.60'],
+        ['Aceite de Bergamota de Calabria', 'Aceites Esenciales', 'Mililitros', '0.0001', '0.06'],
+        ['Esencia de Lemongrass de Tailandia', 'Aceites Esenciales', 'Mililitros', '0.0001', '0.04'],
+        ['Aceite de Rosa Mosqueta de Chile', 'Aceites Esenciales', 'Mililitros', '0.0002', '0.15'],
+        ['Extracto de Incienso de Omán', 'Aceites Esenciales', 'Mililitros', '0.0003', '0.25'],
+        ['Esencia de Menta Piperita Americana', 'Aceites Esenciales', 'Mililitros', '0.0001', '0.05'],
+        ['Aceite de Árbol de Té de Australia', 'Aceites Esenciales', 'Mililitros', '0.0001', '0.07'],
+        ['Extracto de Pachulí de Indonesia', 'Aceites Esenciales', 'Mililitros', '0.0002', '0.10'],
+        ['Esencia de Jazmín de Egipto', 'Aceites Esenciales', 'Mililitros', '0.0005', '0.45'],
+
+        -- Cuidado Dermatológico (Continuación)
+        ['Gel de Limpieza de Aloe Vera Real', 'Cuidado Dermatológico', 'Mililitros', '0.0001', '0.08'],
+        ['Tónico Facial de Agua de Rosas Búlgara', 'Cuidado Dermatológico', 'Mililitros', '0.0001', '0.10'],
+        ['Exfoliante de Café y Canela', 'Cuidado Dermatológico', 'Gramos', '0.0002', '0.12'],
+        ['Mascarilla de Arcilla Blanca del Amazonas', 'Cuidado Dermatológico', 'Gramos', '0.0002', '0.18'],
+        ['Crema de Contorno de Ojos con Ácido Hialurónico', 'Cuidado Dermatológico', 'Mililitros', '0.0005', '0.40'],
+        ['Bálsamo Labial de Cera de Abeja y Miel', 'Cuidado Dermatológico', 'Gramos', '0.0001', '0.05'],
+        ['Aceite Corporal de Almendras Dulces', 'Cuidado Dermatológico', 'Mililitros', '0.0002', '0.15'],
+        ['Protector Solar Mineral de Zinc', 'Cuidado Dermatológico', 'Mililitros', '0.0003', '0.20'],
+
+        -- Aromaterapia (Continuación)
+        ['Vela de Soya con Lavanda y Manzanilla', 'Aromaterapia', 'Unidades', '0.0004', '0.35'],
+        ['Mezcla de Aceites "Sueño Profundo"', 'Aromaterapia', 'Mililitros', '0.0002', '0.15'],
+        ['Incienso Natural de Palo Santo', 'Aromaterapia', 'Unidades', '0.0001', '0.08'],
+        ['Spray Ambiental de Cítricos Energizantes', 'Aromaterapia', 'Mililitros', '0.0001', '0.12'],
+        ['Difusor de Cañas de Canela y Naranja', 'Aromaterapia', 'Unidades', '0.0003', '0.30'],
+        ['Roll-on Anti-Estrés con Vetiver', 'Aromaterapia', 'Mililitros', '0.0002', '0.18'],
+        ['Salvia Blanca para Sahumado', 'Aromaterapia', 'Unidades', '0.0001', '0.10'],
+        ['Aceite de Masaje Relajante de Árnica', 'Aromaterapia', 'Mililitros', '0.0003', '0.22'],
+
+        -- Jabones Artesanales (Continuación)
+        ['Jabón de Avena y Miel Silvestre', 'Jabones Artesanales', 'Gramos', '0.0001', '0.10'],
+        ['Barra de Jabón de Arcilla Roja', 'Jabones Artesanales', 'Gramos', '0.0001', '0.12'],
+        ['Jabón Exfoliante de Semillas de Amapola', 'Jabones Artesanales', 'Gramos', '0.0001', '0.11'],
+        ['Jabón Líquido de Caléndula Orgánica', 'Jabones Artesanales', 'Mililitros', '0.0002', '0.14'],
+        ['Barra de Jabón de Coco y Lima', 'Jabones Artesanales', 'Gramos', '0.0001', '0.09'],
+        ['Jabón de Manteca de Cacao y Vainilla', 'Jabones Artesanales', 'Gramos', '0.0001', '0.13'],
+        ['Jabón de Romero y Limón', 'Jabones Artesanales', 'Gramos', '0.0001', '0.10'],
+        ['Jabón Cremoso de Leche de Cabra', 'Jabones Artesanales', 'Gramos', '0.0001', '0.12'],
+
+        -- Suplementos Naturales (Continuación)
+        ['Cápsulas de Espirulina Azul', 'Suplementos Naturales', 'Unidades', '0.0002', '0.15'],
+        ['Extracto de Hongo Reishi en Polvo', 'Suplementos Naturales', 'Gramos', '0.0006', '0.65'],
+        ['Colágeno Hidrolizado Marino', 'Suplementos Naturales', 'Gramos', '0.0004', '0.40'],
+        ['Cápsulas de Aceite de Krill', 'Suplementos Naturales', 'Unidades', '0.0003', '0.35'],
+        ['Polvo de Ashwagandha de la India', 'Suplementos Naturales', 'Gramos', '0.0005', '0.55'],
+        ['Magnesio Quelado de Alta Absorción', 'Suplementos Naturales', 'Unidades', '0.0002', '0.20'],
+        ['Probióticos Multicepa 50 Billones', 'Suplementos Naturales', 'Unidades', '0.0004', '0.50'],
+        ['Gotas de Clorofila Líquida Concentrada', 'Suplementos Naturales', 'Mililitros', '0.0003', '0.30'],
+
+        -- Fragancias Premium (Continuación)
+        ['Perfume "Noche en Marrakech"', 'Fragancias Premium', 'Mililitros', '0.0006', '0.65'],
+        ['Eau de Toilette "Brisas del Mediterráneo"', 'Fragancias Premium', 'Mililitros', '0.0004', '0.40'],
+        ['Aceite Perfumado "Ámbar Sagrado"', 'Fragancias Premium', 'Mililitros', '0.0008', '0.85'],
+        ['Perfume Sólido de Sándalo y Oud', 'Fragancias Premium', 'Gramos', '0.0005', '0.50'],
+        ['Fragancia "Bosque de Niebla"', 'Fragancias Premium', 'Mililitros', '0.0005', '0.45'],
+        ['Colonia de Té Verde y Jengibre', 'Fragancias Premium', 'Mililitros', '0.0003', '0.25'],
+        ['Perfume Unisex "Metal y Seda"', 'Fragancias Premium', 'Mililitros', '0.0007', '0.70'],
+        ['Extracto de Perfume "Luna de Invierno"', 'Fragancias Premium', 'Mililitros', '0.0009', '0.95'],
+
+        -- Cuidado Capilar (Continuación)
+        ['Acondicionador de Coco y Biotina', 'Cuidado Capilar', 'Mililitros', '0.0002', '0.18'],
+        ['Serum Anti-Frizz de Keratina Vegetal', 'Cuidado Capilar', 'Mililitros', '0.0004', '0.35'],
+        ['Tónico Capilar de Ortiga y Ginseng', 'Cuidado Capilar', 'Mililitros', '0.0003', '0.25'],
+        ['Mascarilla Nutritiva de Palta y Karité', 'Cuidado Capilar', 'Mililitros', '0.0005', '0.45'],
+        ['Shampoo Desintoxicante de Menta y Carbón', 'Cuidado Capilar', 'Mililitros', '0.0002', '0.20'],
+        ['Aceite Pre-Lavado de Neem', 'Cuidado Capilar', 'Mililitros', '0.0003', '0.28'],
+        ['Spray Protector de Calor de Bambú', 'Cuidado Capilar', 'Mililitros', '0.0003', '0.32'],
+        ['Ampollas de Rescate Capilar (Pack 4)', 'Cuidado Capilar', 'Set', '0.001', '1.10'],
+
+        -- Higiene de Lujo (Continuación)
+        ['Gel de Ducha de Orquídea y Vainilla', 'Higiene de Lujo', 'Mililitros', '0.0002', '0.15'],
+        ['Espuma de Afeitar de Eucalipto y Sándalo', 'Higiene de Lujo', 'Mililitros', '0.0003', '0.25'],
+        ['Crema de Manos de Seda y Lavanda', 'Higiene de Lujo', 'Mililitros', '0.0002', '0.20'],
+        ['Enjuague Bucal Natural de Hierbabuena', 'Higiene de Lujo', 'Mililitros', '0.0001', '0.12'],
+        ['Desodorante de Cristal de Alumbre', 'Higiene de Lujo', 'Gramos', '0.0002', '0.18'],
+        ['Talco Corporal de Rosas y Caolín', 'Higiene de Lujo', 'Gramos', '0.0002', '0.15'],
+        ['Aceite de Baño Espumoso de Ylang-Ylang', 'Higiene de Lujo', 'Mililitros', '0.0004', '0.35'],
+        ['Bomba de Baño Efervescente Gold', 'Higiene de Lujo', 'Unidades', '0.0003', '0.22'],
+
+        -- Kits de Regalo (Continuación)
+        ['Cofre "Secretos del Amazonas"', 'Kits de Regalo', 'Set', '0.008', '4.50'],
+        ['Set de Viaje "Explorador Natural"', 'Kits de Regalo', 'Set', '0.004', '2.20'],
+        ['Canasta "Día de Spa en Casa"', 'Kits de Regalo', 'Set', '0.010', '6.00'],
+        ['Dúo de Perfumes "Almas Gemelas"', 'Kits de Regalo', 'Set', '0.005', '3.80'],
+        ['Kit "Primeros Pasos en Aromaterapia"', 'Kits de Regalo', 'Set', '0.006', '3.50'],
+        ['Caja de Lujo "Herencia Ancestral"', 'Kits de Regalo', 'Set', '0.012', '8.00'],
+        ['Set de Jabones del Mundo (X6)', 'Kits de Regalo', 'Set', '0.007', '4.20'],
+        ['Kit "Energía y Vitalidad"', 'Kits de Regalo', 'Set', '0.005', '3.10'],
+
+        -- Bebidas Saludables (Continuación)
+        ['Té Matcha Ceremonial de Grado A', 'Bebidas Saludables', 'Gramos', '0.001', '1.20'],
+        ['Infusión de Frutos del Bosque y Hibisco', 'Bebidas Saludables', 'Gramos', '0.0002', '0.15'],
+        ['Kombucha de Jengibre y Limón (Pack 4)', 'Bebidas Saludables', 'Set', '0.002', '1.50'],
+        ['Polvo para Golden Milk (Cúrcuma Mix)', 'Bebidas Saludables', 'Gramos', '0.0004', '0.35'],
+        ['Agua de Coco Orgánica Liofilizada', 'Bebidas Saludables', 'Gramos', '0.0003', '0.25'],
+        ['Jarabe de Saúco para Defensas', 'Bebidas Saludables', 'Mililitros', '0.0005', '0.45'],
+        ['Concentrado de Aloe y Goji', 'Bebidas Saludables', 'Mililitros', '0.0006', '0.55'],
+        ['Té Chai Especiado Artesanal', 'Bebidas Saludables', 'Gramos', '0.0003', '0.28']
     ];
 BEGIN
     FOR i IN 1..array_length(v_datos, 1) LOOP
@@ -1640,7 +1826,88 @@ DECLARE
         ['Loción Corporal de Orquídeas Blancas', '55.00'],
         ['Set de Bienestar "Zen Spirit"', '180.00'],
         ['Caja de Regalo "Ritual de Sueño"', '125.00'],
-        ['Elixir de Té Blanco y Jengibre', '20.00']
+        ['Elixir de Té Blanco y Jengibre', '20.00'],
+        
+        ['Aceite de Bergamota de Calabria', '28.00'],
+        ['Esencia de Lemongrass de Tailandia', '19.50'],
+        ['Aceite de Rosa Mosqueta de Chile', '34.00'],
+        ['Extracto de Incienso de Omán', '55.00'],
+        ['Esencia de Menta Piperita Americana', '22.00'],
+        ['Aceite de Árbol de Té de Australia', '26.00'],
+        ['Extracto de Pachulí de Indonesia', '31.50'],
+        ['Esencia de Jazmín de Egipto', '68.00'],
+        ['Gel de Limpieza de Aloe Vera Real', '18.50'],
+        ['Tónico Facial de Agua de Rosas Búlgara', '24.00'],
+        ['Exfoliante de Café y Canela', '16.50'],
+        ['Mascarilla de Arcilla Blanca del Amazonas', '29.00'],
+        ['Crema de Contorno de Ojos con Ácido Hialurónico', '48.00'],
+        ['Bálsamo Labial de Cera de Abeja y Miel', '8.50'],
+        ['Aceite Corporal de Almendras Dulces', '21.00'],
+        ['Protector Solar Mineral de Zinc', '35.00'],
+        ['Vela de Soya con Lavanda y Manzanilla', '26.00'],
+        ['Mezcla de Aceites "Sueño Profundo"', '32.00'],
+        ['Incienso Natural de Palo Santo', '14.00'],
+        ['Spray Ambiental de Cítricos Energizantes', '18.00'],
+        ['Difusor de Cañas de Canela y Naranja', '38.00'],
+        ['Roll-on Anti-Estrés con Vetiver', '24.50'],
+        ['Salvia Blanca para Sahumado', '12.00'],
+        ['Aceite de Masaje Relajante de Árnica', '28.00'],
+        ['Jabón de Avena y Miel Silvestre', '11.50'],
+        ['Barra de Jabón de Arcilla Roja', '13.00'],
+        ['Jabón Exfoliante de Semillas de Amapola', '12.50'],
+        ['Jabón Líquido de Caléndula Orgánica', '15.00'],
+        ['Barra de Jabón de Coco y Lima', '10.50'],
+        ['Jabón de Manteca de Cacao y Vainilla', '14.00'],
+        ['Jabón de Romero y Limón', '11.00'],
+        ['Jabón Cremoso de Leche de Cabra', '13.50'],
+        ['Cápsulas de Espirulina Azul', '42.00'],
+        ['Extracto de Hongo Reishi en Polvo', '58.00'],
+        ['Colágeno Hidrolizado Marino', '45.00'],
+        ['Cápsulas de Aceite de Krill', '39.00'],
+        ['Polvo de Ashwagandha de la India', '32.50'],
+        ['Magnesio Quelado de Alta Absorción', '25.00'],
+        ['Probióticos Multicepa 50 Billones', '49.00'],
+        ['Gotas de Clorofila Líquida Concentrada', '28.00'],
+        ['Perfume "Noche en Marrakech"', '165.00'],
+        ['Eau de Toilette "Brisas del Mediterráneo"', '85.00'],
+        ['Aceite Perfumado "Ámbar Sagrado"', '75.00'],
+        ['Perfume Sólido de Sándalo y Oud', '45.00'],
+        ['Fragancia "Bosque de Niebla"', '110.00'],
+        ['Colonia de Té Verde y Jengibre', '55.00'],
+        ['Perfume Unisex "Metal y Seda"', '140.00'],
+        ['Extracto de Perfume "Luna de Invierno"', '190.00'],
+        ['Acondicionador de Coco y Biotina', '22.00'],
+        ['Serum Anti-Frizz de Keratina Vegetal', '38.00'],
+        ['Tónico Capilar de Ortiga y Ginseng', '26.00'],
+        ['Mascarilla Nutritiva de Palta y Karité', '32.00'],
+        ['Shampoo Desintoxicante de Menta y Carbón', '24.00'],
+        ['Aceite Pre-Lavado de Neem', '29.50'],
+        ['Spray Protector de Calor de Bambú', '21.00'],
+        ['Ampollas de Rescate Capilar (Pack 4)', '45.00'],
+        ['Gel de Ducha de Orquídea y Vainilla', '19.50'],
+        ['Espuma de Afeitar de Eucalipto y Sándalo', '22.00'],
+        ['Crema de Manos de Seda y Lavanda', '16.00'],
+        ['Enjuague Bucal Natural de Hierbabuena', '14.00'],
+        ['Desodorante de Cristal de Alumbre', '12.50'],
+        ['Talco Corporal de Rosas y Caolín', '15.00'],
+        ['Aceite de Baño Espumoso de Ylang-Ylang', '34.00'],
+        ['Bomba de Baño Efervescente Gold', '9.00'],
+        ['Cofre "Secretos del Amazonas"', '210.00'],
+        ['Set de Viaje "Explorador Natural"', '65.00'],
+        ['Canasta "Día de Spa en Casa"', '145.00'],
+        ['Dúo de Perfumes "Almas Gemelas"', '120.00'],
+        ['Kit "Primeros Pasos en Aromaterapia"', '85.00'],
+        ['Caja de Lujo "Herencia Ancestral"', '350.00'],
+        ['Set de Jabones del Mundo (X6)', '55.00'],
+        ['Kit "Energía y Vitalidad"', '75.00'],
+        ['Té Matcha Ceremonial de Grado A', '42.00'],
+        ['Infusión de Frutos del Bosque y Hibisco', '18.00'],
+        ['Kombucha de Jengibre y Limón (Pack 4)', '24.00'],
+        ['Polvo para Golden Milk (Cúrcuma Mix)', '26.50'],
+        ['Agua de Coco Orgánica Liofilizada', '19.00'],
+        ['Jarabe de Saúco para Defensas', '32.00'],
+        ['Concentrado de Aloe y Goji', '38.00'],
+        ['Té Chai Especiado Artesanal', '22.50']
     ];
 BEGIN
     FOR i IN 1..array_length(v_datos, 1) LOOP
@@ -1687,7 +1954,107 @@ DECLARE
         ['Polvo de Maca Andina Orgánica', 'Certificación', 'USDA Organic'],
         ['Jabón de Carbón Activado y Menta', 'Certificación', 'Cruelty Free'],
         ['Set de Bienestar "Zen Spirit"', 'Incluye', 'Difusor + 3 Aceites'],
-        ['Elixir de Té Blanco y Jengibre', 'Atributo', 'Sin Azúcar Añadida']
+        ['Elixir de Té Blanco y Jengibre', 'Atributo', 'Sin Azúcar Añadida'],
+
+        -- Aceites Esenciales
+        ['Aceite de Bergamota de Calabria', 'Origen', 'Italia'],
+        ['Esencia de Lemongrass de Tailandia', 'Beneficio', 'Repelente Natural'],
+        ['Aceite de Rosa Mosqueta de Chile', 'Certificación', 'Orgánico'],
+        ['Extracto de Incienso de Omán', 'Grado', 'Terapéutico'],
+        ['Esencia de Menta Piperita Americana', 'Nota', 'Refrescante'],
+        ['Aceite de Árbol de Té de Australia', 'Uso', 'Antiséptico'],
+        ['Extracto de Pachulí de Indonesia', 'Origen', 'Java'],
+        ['Esencia de Jazmín de Egipto', 'Método', 'Extracción por Solvente'],
+
+        -- Cuidado Dermatológico
+        ['Gel de Limpieza de Aloe Vera Real', 'Ingrediente', '99% Aloe'],
+        ['Tónico Facial de Agua de Rosas Búlgara', 'Origen', 'Valle de las Rosas'],
+        ['Exfoliante de Café y Canela', 'Tipo', 'Exfoliante Mecánico'],
+        ['Mascarilla de Arcilla Blanca del Amazonas', 'Beneficio', 'Desintoxicante'],
+        ['Crema de Contorno de Ojos con Ácido Hialurónico', 'Atributo', 'Vegano'],
+        ['Bálsamo Labial de Cera de Abeja y Miel', 'Certificación', 'Cruelty Free'],
+        ['Aceite Corporal de Almendras Dulces', 'Prensado', 'En Frío'],
+        ['Protector Solar Mineral de Zinc', 'SPF', '50+'],
+
+        -- Aromaterapia
+        ['Vela de Soya con Lavanda y Manzanilla', 'Duración', '40 Horas'],
+        ['Mezcla de Aceites "Sueño Profundo"', 'Incluye', 'Valeriana y Lavanda'],
+        ['Incienso Natural de Palo Santo', 'Cosecha', 'Sustentable'],
+        ['Spray Ambiental de Cítricos Energizantes', 'Nota', 'Naranja y Limón'],
+        ['Difusor de Cañas de Canela y Naranja', 'Material', 'Vidrio Reciclado'],
+        ['Roll-on Anti-Estrés con Vetiver', 'Aplicación', 'Puntos de Pulso'],
+        ['Salvia Blanca para Sahumado', 'Origen', 'California'],
+        ['Aceite de Masaje Relajante de Árnica', 'Uso', 'Alivio Muscular'],
+
+        -- Jabones Artesanales
+        ['Jabón de Avena y Miel Silvestre', 'Piel', 'Sensible'],
+        ['Barra de Jabón de Arcilla Roja', 'Mineral', 'Rico en Hierro'],
+        ['Jabón Exfoliante de Semillas de Amapola', 'Textura', 'Rugosa'],
+        ['Jabón Líquido de Caléndula Orgánica', 'pH', 'Neutro'],
+        ['Barra de Jabón de Coco y Lima', 'Aroma', 'Tropical'],
+        ['Jabón de Manteca de Cacao y Vainilla', 'Beneficio', 'Ultra-Hidratante'],
+        ['Jabón de Romero y Limón', 'Atributo', 'Biodegradable'],
+        ['Jabón Cremoso de Leche de Cabra', 'Vitamina', 'Rico en Vitamina A'],
+
+        -- Suplementos Naturales
+        ['Cápsulas de Espirulina Azul', 'Contenido', '60 Cápsulas'],
+        ['Extracto de Hongo Reishi en Polvo', 'Beneficio', 'Inmunomodulador'],
+        ['Colágeno Hidrolizado Marino', 'Origen', 'Pescado Silvestre'],
+        ['Cápsulas de Aceite de Krill', 'Nutriente', 'Omega-3'],
+        ['Polvo de Ashwagandha de la India', 'Tipo', 'Adaptógeno'],
+        ['Magnesio Quelado de Alta Absorción', 'Forma', 'Bisglicinato'],
+        ['Probióticos Multicepa 50 Billones', 'Cepas', '15 Variedades'],
+        ['Gotas de Clorofila Líquida Concentrada', 'Beneficio', 'Oxigenante'],
+
+        -- Fragancias Premium
+        ['Perfume "Noche en Marrakech"', 'Familia', 'Oriental Especiada'],
+        ['Eau de Toilette "Brisas del Mediterráneo"', 'Nota Salida', 'Bergamota'],
+        ['Aceite Perfumado "Ámbar Sagrado"', 'Base', 'Aceite de Jojoba'],
+        ['Perfume Sólido de Sándalo y Oud', 'Presentación', 'Lata de Viaje'],
+        ['Fragancia "Bosque de Niebla"', 'Género', 'Unisex'],
+        ['Colonia de Té Verde y Jengibre', 'Estilo', 'Casual'],
+        ['Perfume Unisex "Metal y Seda"', 'Concepto', 'Contraste Moderno'],
+        ['Extracto de Perfume "Luna de Invierno"', 'Concentración', '30%'],
+
+        -- Cuidado Capilar
+        ['Acondicionador de Coco y Biotina', 'Beneficio', 'Fortalecedor'],
+        ['Serum Anti-Frizz de Keratina Vegetal', 'Protección', 'Humedad'],
+        ['Tónico Capilar de Ortiga y Ginseng', 'Uso', 'Anticaída'],
+        ['Mascarilla Nutritiva de Palta y Karité', 'Tiempo Uso', '15 Minutos'],
+        ['Shampoo Desintoxicante de Menta y Carbón', 'Limpieza', 'Profunda'],
+        ['Aceite Pre-Lavado de Neem', 'Tratamiento', 'Cuero Cabelludo'],
+        ['Spray Protector de Calor de Bambú', 'Resistencia', 'Hasta 230°C'],
+        ['Ampollas de Rescate Capilar (Pack 4)', 'Frecuencia', 'Semanal'],
+
+        -- Higiene de Lujo
+        ['Gel de Ducha de Orquídea y Vainilla', 'Textura', 'Satinada'],
+        ['Espuma de Afeitar de Eucalipto y Sándalo', 'Efecto', 'Calmante'],
+        ['Crema de Manos de Seda y Lavanda', 'Absorción', 'Rápida'],
+        ['Enjuague Bucal Natural de Hierbabuena', 'Sin', 'Alcohol'],
+        ['Desodorante de Cristal de Alumbre', 'Duración', '24 Horas'],
+        ['Talco Corporal de Rosas y Caolín', 'Función', 'Absorbente'],
+        ['Aceite de Baño Espumoso de Ylang-Ylang', 'Aroma', 'Sensual'],
+        ['Bomba de Baño Efervescente Gold', 'Efecto', 'Brillo Dorado'],
+
+        -- Kits de Regalo
+        ['Cofre "Secretos del Amazonas"', 'Origen Insumos', 'Brasil/Perú'],
+        ['Set de Viaje "Explorador Natural"', 'Tamaño', 'Travel Size'],
+        ['Canasta "Día de Spa en Casa"', 'Piezas', '8 Elementos'],
+        ['Dúo de Perfumes "Almas Gemelas"', 'Contenido', '2 x 50ml'],
+        ['Kit "Primeros Pasos en Aromaterapia"', 'Incluye', 'Guía de Uso'],
+        ['Caja de Lujo "Herencia Ancestral"', 'Edición', 'Limitada'],
+        ['Set de Jabones del Mundo (X6)', 'Variedad', 'Multicontinental'],
+        ['Kit "Energía y Vitalidad"', 'Objetivo', 'Revitalizante'],
+
+        -- Bebidas Saludables
+        ['Té Matcha Ceremonial de Grado A', 'Origen', 'Uji, Japón'],
+        ['Infusión de Frutos del Bosque y Hibisco', 'Teína', 'Libre de Teína'],
+        ['Kombucha de Jengibre y Limón (Pack 4)', 'Proceso', 'Fermentación Natural'],
+        ['Polvo para Golden Milk (Cúrcuma Mix)', 'Preparación', 'Leche Caliente'],
+        ['Agua de Coco Orgánica Liofilizada', 'Estado', 'Polvo'],
+        ['Jarabe de Saúco para Defensas', 'Vitamina', 'Rico en Vitamina C'],
+        ['Concentrado de Aloe y Goji', 'Sabor', 'Frutal'],
+        ['Té Chai Especiado Artesanal', 'Especias', 'Cardamomo y Clavo']
     ];
 BEGIN
     FOR i IN 1..array_length(v_datos, 1) LOOP
@@ -1707,74 +2074,6 @@ BEGIN
             RAISE WARNING 'Producto % no encontrado para añadir característica.', v_datos[i][1];
         END IF;
     END LOOP;
-END $$;
-
--- bulkpurchases
-DO $$
-DECLARE
-    v_bulk_id      INTEGER;
-    v_prod_id      INTEGER;
-    v_supp_id      INTEGER;
-    v_unit_id      INTEGER;
-    v_country_id   INTEGER;
-    v_arrival_date TIMESTAMP := CURRENT_TIMESTAMP + INTERVAL '15 days';
-BEGIN
-    -- 1. Compra: Aceite de Lavanda (Francia)
-    SELECT productId INTO v_prod_id FROM Products WHERE productName = 'Aceite de Lavanda de Provenza';
-    SELECT supplierId INTO v_supp_id FROM Suppliers WHERE supplierName = 'French Fragrance Corp';
-    SELECT unitId INTO v_unit_id FROM MeasurementUnits WHERE unitName = 'Litros';
-    SELECT countryId INTO v_country_id FROM Countries WHERE isoCode = 'FR';
-
-    CALL sp_register_bulk_purchase(
-        v_prod_id, v_supp_id, 50.000, v_unit_id, 1200.00, v_country_id, 
-        46.000, 0.0500, v_arrival_date, 150.00, 200.00, v_bulk_id
-    );
-
-    -- 2. Compra: Esencia de Sándalo (Japón)
-    SELECT productId INTO v_prod_id FROM Products WHERE productName = 'Esencia de Sándalo de Japón';
-    SELECT supplierId INTO v_supp_id FROM Suppliers WHERE supplierName = 'Osaka Essential Oils';
-    SELECT unitId INTO v_unit_id FROM MeasurementUnits WHERE unitName = 'Litros';
-    SELECT countryId INTO v_country_id FROM Countries WHERE isoCode = 'JP';
-
-    CALL sp_register_bulk_purchase(
-        v_prod_id, v_supp_id, 20.000, v_unit_id, 3500.00, v_country_id, 
-        18.500, 0.0250, v_arrival_date + INTERVAL '5 days', 450.00, 300.00, v_bulk_id
-    );
-
-    -- 3. Compra: Serum Facial (España)
-    SELECT productId INTO v_prod_id FROM Products WHERE productName = 'Serum Facial de Algas Rojas';
-    SELECT supplierId INTO v_supp_id FROM Suppliers WHERE supplierName = 'Madrid Dermatological Sourcing';
-    SELECT unitId INTO v_unit_id FROM MeasurementUnits WHERE unitName = 'Unidades';
-    SELECT countryId INTO v_country_id FROM Countries WHERE isoCode = 'ES';
-
-    CALL sp_register_bulk_purchase(
-        v_prod_id, v_supp_id, 500.000, v_unit_id, 8500.00, v_country_id, 
-        60.000, 0.1500, v_arrival_date, 800.00, 450.00, v_bulk_id
-    );
-
-    -- 4. Compra: Cápsulas de Cúrcuma (Alemania)
-    SELECT productId INTO v_prod_id FROM Products WHERE productName = 'Cápsulas de Cúrcuma Longa';
-    SELECT supplierId INTO v_supp_id FROM Suppliers WHERE supplierName = 'Bavarian Healing Herbs';
-    SELECT unitId INTO v_unit_id FROM MeasurementUnits WHERE unitName = 'Unidades';
-    SELECT countryId INTO v_country_id FROM Countries WHERE isoCode = 'DE';
-
-    CALL sp_register_bulk_purchase(
-        v_prod_id, v_supp_id, 1000.000, v_unit_id, 4000.00, v_country_id, 
-        100.000, 0.2000, v_arrival_date + INTERVAL '2 days', 200.00, 350.00, v_bulk_id
-    );
-
-    -- 5. Compra: Set de Bienestar (USA)
-    SELECT productId INTO v_prod_id FROM Products WHERE productName = 'Set de Bienestar "Zen Spirit"';
-    SELECT supplierId INTO v_supp_id FROM Suppliers WHERE supplierName = 'Miami Export Logistics';
-    SELECT unitId INTO v_unit_id FROM MeasurementUnits WHERE unitName = 'Set';
-    SELECT countryId INTO v_country_id FROM Countries WHERE isoCode = 'US';
-
-    CALL sp_register_bulk_purchase(
-        v_prod_id, v_supp_id, 100.000, v_unit_id, 5500.00, v_country_id, 
-        250.000, 1.5000, v_arrival_date, 550.00, 600.00, v_bulk_id
-    );
-
-    RAISE NOTICE 'Carga inicial de compras a granel completada satisfactoriamente.';
 END $$;
 
 -- permittypes
@@ -1798,6 +2097,142 @@ BEGIN
         );
         RAISE NOTICE 'Tipo de permiso procesado: % (ID: %)', v_datos[i][1], v_permit_id;
     END LOOP;
+END $$;
+
+-- bulkpurchases
+DO $$
+DECLARE
+    v_bulk_id      INTEGER;
+    v_prod_id      INTEGER;
+    v_supp_id      INTEGER;
+    v_unit_id      INTEGER;
+    v_country_id   INTEGER;
+    v_hub_id       INTEGER;
+    v_permit_id    INTEGER;
+    v_disp_id      INTEGER;
+    v_order_num    VARCHAR(60);
+    v_final_stock DECIMAL(12,3);
+BEGIN
+    -- 1. Compra: Aceite de Lavanda (Francia)
+    SELECT productId INTO v_prod_id FROM Products WHERE productName = 'Aceite de Lavanda de Provenza';
+    SELECT supplierId INTO v_supp_id FROM Suppliers WHERE supplierName = 'French Fragrance Corp';
+    SELECT unitId INTO v_unit_id FROM MeasurementUnits WHERE unitName = 'Litros';
+    SELECT countryId INTO v_country_id FROM Countries WHERE isoCode = 'FR';
+
+    CALL sp_register_bulk_purchase(
+        v_prod_id, v_supp_id, 50.000, v_unit_id, 1200.00, v_country_id, 
+        46.000, 0.0500, null, 150.00, 200.00, v_bulk_id
+    );
+
+    -- 2. Compra: Esencia de Sándalo (Japón)
+    SELECT productId INTO v_prod_id FROM Products WHERE productName = 'Esencia de Sándalo de Japón';
+    SELECT supplierId INTO v_supp_id FROM Suppliers WHERE supplierName = 'Osaka Essential Oils';
+    SELECT unitId INTO v_unit_id FROM MeasurementUnits WHERE unitName = 'Litros';
+    SELECT countryId INTO v_country_id FROM Countries WHERE isoCode = 'JP';
+
+    CALL sp_register_bulk_purchase(
+        v_prod_id, v_supp_id, 20.000, v_unit_id, 3500.00, v_country_id, 
+        18.500, 0.0250, null , 450.00, 300.00, v_bulk_id
+    );
+
+    -- 3. Compra: Serum Facial (España)
+    SELECT productId INTO v_prod_id FROM Products WHERE productName = 'Serum Facial de Algas Rojas';
+    SELECT supplierId INTO v_supp_id FROM Suppliers WHERE supplierName = 'Madrid Dermatological Sourcing';
+    SELECT unitId INTO v_unit_id FROM MeasurementUnits WHERE unitName = 'Unidades';
+    SELECT countryId INTO v_country_id FROM Countries WHERE isoCode = 'ES';
+
+    CALL sp_register_bulk_purchase(
+        v_prod_id, v_supp_id, 500.000, v_unit_id, 8500.00, v_country_id, 
+        60.000, 0.1500, null, 800.00, 450.00, v_bulk_id
+    );
+
+    -- 4. Compra: Cápsulas de Cúrcuma (Alemania)
+    SELECT productId INTO v_prod_id FROM Products WHERE productName = 'Cápsulas de Cúrcuma Longa';
+    SELECT supplierId INTO v_supp_id FROM Suppliers WHERE supplierName = 'Bavarian Healing Herbs';
+    SELECT unitId INTO v_unit_id FROM MeasurementUnits WHERE unitName = 'Unidades';
+    SELECT countryId INTO v_country_id FROM Countries WHERE isoCode = 'DE';
+
+    CALL sp_register_bulk_purchase(
+        v_prod_id, v_supp_id, 1000.000, v_unit_id, 4000.00, v_country_id, 
+        100.000, 0.2000, null, 200.00, 350.00, v_bulk_id
+    );
+
+    -- 5. Compra: Set de Bienestar (USA)
+    SELECT productId INTO v_prod_id FROM Products WHERE productName = 'Set de Bienestar "Zen Spirit"';
+    SELECT supplierId INTO v_supp_id FROM Suppliers WHERE supplierName = 'Miami Export Logistics';
+    SELECT unitId INTO v_unit_id FROM MeasurementUnits WHERE unitName = 'Set';
+    SELECT countryId INTO v_country_id FROM Countries WHERE isoCode = 'US';
+
+    CALL sp_register_bulk_purchase(
+        v_prod_id, v_supp_id, 100.000, v_unit_id, 5500.00, v_country_id, 
+        250.000, 1.5000, null, 550.00, 600.00, v_bulk_id
+    );
+
+    -- Paquetes ya en bodega:
+    
+    -- Enero 2026
+    CALL sp_register_bulk_purchase(
+        1, 3, 600.000, 1, 3600.00, 7, 
+        300.0, 0.6000, '2026-01-10 08:00:00', 360.00, 420.00, v_bulk_id
+    );
+    CALL sp_update_bulk_purchase_status(v_bulk_id, 'EN_ALMACEN', '2026-01-10 08:00:00');
+    CALL sp_register_import_permit(v_bulk_id, 2, CONCAT('PER-FIT-2601-',v_bulk_id), 'SENASAG Nicaragua', '2026-01-05', '2027-01-05', 95.00, v_permit_id);
+    CALL sp_register_inventory_movement(1, v_bulk_id, 'ENTRADA', 600.0,  6.00,  NULL, 'Entrada producto 1', v_hub_id);
+    CALL sp_create_dispatch_order(1, 120.0::DECIMAL, 1, 6.00::DECIMAL, v_disp_id, v_order_num);
+    CALL sp_update_dispatch_order_status(v_disp_id, 'ENTREGADO_COURIER', '2026-01-20 08:00:00');
+    CALL sp_register_inventory_movement(1, v_bulk_id, 'SALIDA', 120.0, 6.00, v_disp_id, 'Despacho a CR', v_hub_id);
+    CALL sp_recalculate_inventory_stock(1, v_final_stock);
+
+    CALL sp_register_bulk_purchase(
+        2, 5, 450.000, 1, 4050.00, 8, 
+        225.0, 0.5000, '2026-01-12 10:00:00', 405.00, 380.00, v_bulk_id
+        );
+    CALL sp_update_bulk_purchase_status(v_bulk_id, 'EN_ALMACEN', '2026-01-12 10:00:00');
+    CALL sp_register_import_permit(v_bulk_id, 2, CONCAT('PER-COA-2601-',v_bulk_id), 'MINSA Nicaragua', '2026-01-07', '2027-01-07', 80.00, v_permit_id);
+    CALL sp_register_inventory_movement(2,  v_bulk_id,  'ENTRADA', 450.0,  9.00,  NULL, 'Entrada producto 2',  v_hub_id);
+    CALL sp_create_dispatch_order(2, 100.0::DECIMAL, 5, 9.00::DECIMAL, v_disp_id, v_order_num);
+    CALL sp_update_dispatch_order_status(v_disp_id, 'ENTREGADO_COURIER', '2026-01-22 09:00:00');
+    CALL sp_register_inventory_movement(2, v_bulk_id, 'SALIDA', 100.0, 9.00, v_disp_id, 'Despacho a CO', v_hub_id);
+    CALL sp_recalculate_inventory_stock(2, v_final_stock);
+
+    CALL sp_register_bulk_purchase(
+        3, 2, 500.000, 2, 6500.00, 3, 
+        250.0, 0.5500, '2026-01-14 09:00:00', 650.00, 580.00, v_bulk_id
+        );
+    CALL sp_update_bulk_purchase_status(v_bulk_id, 'EN_ALMACEN', '2026-01-14 09:00:00');
+    CALL sp_register_import_permit(v_bulk_id, 2, CONCAT('PER-SAN-2601-',v_bulk_id), 'MINSA Nicaragua', '2026-01-08', '2027-01-08', 120.00, v_permit_id);
+    CALL sp_register_inventory_movement(3,  v_bulk_id,  'ENTRADA', 500.0, 13.00,  NULL, 'Entrada producto 3',  v_hub_id);
+    CALL sp_create_dispatch_order(3, 150.0::DECIMAL, 6, 13.00::DECIMAL, v_disp_id, v_order_num);
+    CALL sp_update_dispatch_order_status(v_disp_id, 'ENTREGADO_COURIER', '2026-01-23 09:00:00');
+    CALL sp_register_inventory_movement(3, v_bulk_id, 'SALIDA', 150.0, 13.00, v_disp_id, 'Despacho a MX', v_hub_id);
+    CALL sp_recalculate_inventory_stock(3, v_final_stock);
+
+    CALL sp_register_bulk_purchase(
+        4, 1, 300.000, 3, 5400.00, 9, 
+        150.0, 0.3500, '2026-01-16 11:00:00', 540.00, 490.00, v_bulk_id
+        );
+    CALL sp_update_bulk_purchase_status(v_bulk_id, 'EN_ALMACEN', '2026-01-16 11:00:00');
+    CALL sp_register_import_permit(v_bulk_id, 1, CONCAT('PER-FIT-2601-',v_bulk_id), 'SENASAG Nicaragua', '2026-01-10', '2027-01-10', 75.00, v_permit_id);
+    CALL sp_register_inventory_movement(4,  v_bulk_id,  'ENTRADA', 300.0, 18.00,  NULL, 'Entrada producto 4',  v_hub_id);
+    CALL sp_create_dispatch_order(4, 80.0::DECIMAL, 4, 18.00::DECIMAL, v_disp_id, v_order_num);
+    CALL sp_update_dispatch_order_status(v_disp_id, 'ENTREGADO_COURIER', '2026-01-24 09:00:00');
+    CALL sp_register_inventory_movement(4, v_bulk_id, 'SALIDA', 80.0, 18.00, v_disp_id, 'Despacho a ES', v_hub_id);
+    CALL sp_recalculate_inventory_stock(4, v_final_stock);
+
+    CALL sp_register_bulk_purchase(
+        5, 4, 800.000, 3, 2400.00, 10, 
+        400.0, 1.2000, '2026-01-18 08:00:00', 240.00, 310.00, v_bulk_id
+        );
+    CALL sp_update_bulk_purchase_status(v_bulk_id, 'EN_ALMACEN', '2026-01-18 08:00:00');
+    CALL sp_register_import_permit(v_bulk_id, 1, CONCAT('PER-SUP-2601-',v_bulk_id), 'MINSA Nicaragua', '2026-01-12', '2027-01-12', 110.00, v_permit_id);
+    CALL sp_register_inventory_movement(5, v_bulk_id,  'ENTRADA', 800.0,  3.00,  NULL, 'Entrada producto 5',  v_hub_id);
+    CALL sp_create_dispatch_order(5, 200.0::DECIMAL, 2, 3.00::DECIMAL, v_disp_id, v_order_num);
+    CALL sp_update_dispatch_order_status(v_disp_id, 'ENTREGADO_COURIER', '2026-01-25 09:00:00');
+    CALL sp_register_inventory_movement(5, v_bulk_id, 'SALIDA', 200.0, 3.00, v_disp_id, 'Despacho a US', v_hub_id);
+    CALL sp_recalculate_inventory_stock(5, v_final_stock);
+
+
+    RAISE NOTICE 'Carga inicial de compras a granel completada satisfactoriamente.';
 END $$;
 
 --importpermits

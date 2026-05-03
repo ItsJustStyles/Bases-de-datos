@@ -1,24 +1,3 @@
--- ============================================================
---  Dynamic Brands DB — Stored Procedures
---  Engine  : MySQL 8.4
---  DB      : dynamic_brands_db
---  Created : 2026-05-01
---
---  CONVENCIONES
---    · Todos los SPs llevan prefijo sp_
---    · Parámetros de entrada : p_  (IN)
---    · Parámetros de salida  : p_  (OUT / INOUT)
---    · Variables locales     : v_
---    · Cada SP registra su actividad en ProcessLog vía sp_log_event
---    · Los SPs de escritura abren transacción explícita cuando
---      afectan más de una tabla
---
---  COHERENCIA CON ETHERIA
---    · ProductCatalog.etheriaProductId  → Etheria.Products.productId
---    · Orders.etheriaDispatchOrderId    → Etheria.DispatchOrders.dispatchOrderId
---    · Countries y Currencies comparten isoCode / currencyCode entre ambas DBs
--- ============================================================
-
 USE dynamic_brands_db;
 
 SET NAMES 'utf8mb4' COLLATE 'utf8mb4_0900_ai_ci';
@@ -26,11 +5,6 @@ SET CHARACTER SET utf8mb4;
 
 DELIMITER $$
 
--- ============================================================
---  HELPER  sp_log_event
---  Inserta un registro en ProcessLog.
---  Usado internamente por todos los demás SPs.
--- ============================================================
 CREATE PROCEDURE sp_log_event(
     IN p_eventSource        VARCHAR(150),
     IN p_eventType          VARCHAR(60),
@@ -1175,14 +1149,14 @@ CALL sp_upsert_exchange_rate(@curr_eur, 1.08,    '2026-05-01', 'BCE',           
 CALL sp_upsert_exchange_rate(@curr_jpy, 0.0067,  '2026-05-01', 'BoJ',               @rate_jpy);
 
 -- 7. IMPUESTOS POR PAÍS
-CALL sp_upsert_country_tax(@country_ni, 15.00, 'IVA Nicaragua',     '2026-01-01', NULL, @tax_ni);
+CALL sp_upsert_country_tax(@country_ni, 10.00, 'IVA Nicaragua',     '2026-01-01', NULL, @tax_ni);
 CALL sp_upsert_country_tax(@country_us,  0.00, 'No federal VAT',    '2026-01-01', NULL, @tax_us);
 CALL sp_upsert_country_tax(@country_pa,  7.00, 'ITBMS Panamá',      '2026-01-01', NULL, @tax_pa);
-CALL sp_upsert_country_tax(@country_es, 21.00, 'IVA España',        '2026-01-01', NULL, @tax_es);
-CALL sp_upsert_country_tax(@country_co, 19.00, 'IVA Colombia',      '2026-01-01', NULL, @tax_co);
+CALL sp_upsert_country_tax(@country_es, 15.00, 'IVA España',        '2026-01-01', NULL, @tax_es);
+CALL sp_upsert_country_tax(@country_co, 8.00, 'IVA Colombia',      '2026-01-01', NULL, @tax_co);
 CALL sp_upsert_country_tax(@country_mx, 16.00, 'IVA México',        '2026-01-01', NULL, @tax_mx);
 CALL sp_upsert_country_tax(@country_br, 17.00, 'ICMS Brasil',       '2026-01-01', NULL, @tax_br);
-CALL sp_upsert_country_tax(@country_fr, 20.00, 'TVA Francia',       '2026-01-01', NULL, @tax_fr);
+CALL sp_upsert_country_tax(@country_fr, 14.00, 'TVA Francia',       '2026-01-01', NULL, @tax_fr);
 CALL sp_upsert_country_tax(@country_de, 19.00, 'IVA Alemania',      '2026-01-01', NULL, @tax_de);
 CALL sp_upsert_country_tax(@country_jp, 10.00, 'Consumo Japón',     '2026-01-01', NULL, @tax_jp);
 CALL sp_upsert_country_tax(@country_cr, 13.00, 'IVA Costa Rica',    '2026-01-01', NULL, @tax_cr);
@@ -1191,6 +1165,11 @@ CALL sp_upsert_country_tax(@country_cr, 13.00, 'IVA Costa Rica',    '2026-01-01'
 CALL sp_upsert_brand('Aura Organics',  'Skincare y cosmética dermatológica',  1, @brand_aura);
 CALL sp_upsert_brand('Vital Essence',  'Cuidado capilar y aceites esenciales',1, @brand_vital);
 CALL sp_upsert_brand('EcoLuxe',        'Aromaterapia y bienestar',            1, @brand_ecoluxe);
+CALL sp_upsert_brand('VitalCore', 'Suplementos y Bienestar', 1, @brand_vitalcore);
+CALL sp_upsert_brand('DermaNatura', 'Cuidado Dermatológico y Capilar', 1, @brand_dermanatura);
+CALL sp_upsert_brand('AromaLux', 'Aromaterapia y Fragancias Premium', 1, @brand_aromalux);
+CALL sp_upsert_brand('PureSense', 'Jabones e Higiene de Lujo', 1, @brand_puresense);
+CALL sp_upsert_brand('GiftEssence', 'Kits de Regalo y Bebidas Saludables', 1, @brand_giftessence);
 
 -- 9. SITIOS WEB (9 sitios usando países existentes en Etheria)
 -- Aura Organics
@@ -1205,8 +1184,22 @@ CALL sp_upsert_website(@brand_vital,   @country_es, 'https://vital-es.com',   'H
 CALL sp_upsert_website(@brand_ecoluxe, @country_br, 'https://ecoluxe-br.com', 'Aromaterapia Brasil',         NULL, '2026-05-01', NULL, @site_7);
 CALL sp_upsert_website(@brand_ecoluxe, @country_fr, 'https://ecoluxe-fr.com', 'Aromaterapia Francia',        NULL, '2026-05-01', NULL, @site_8);
 CALL sp_upsert_website(@brand_ecoluxe, @country_jp, 'https://ecoluxe-jp.com', 'Aromaterapia Japón',          NULL, '2026-05-01', NULL, @site_9);
+-- VitalCore
+CALL sp_upsert_website(@brand_vitalcore, @country_co, 'https://vitalcore.co', 'Bienestar integral para Colombia', NULL, '2025-06-01', NULL, @site_10);
+CALL sp_upsert_website(@brand_vitalcore, @country_br, 'https://vitalcore.pe', 'Suplementos naturales para Brasil', NULL, '2025-06-15', NULL, @site_11);
+-- DermaNatura
+CALL sp_upsert_website(@brand_dermanatura, @country_mx, 'https://dermanat.mx', 'Cuidado de piel premium para Mexico', NULL, '2025-08-01', NULL, @site_12);
+-- AromaLux
+CALL sp_upsert_website(@brand_aromalux, @country_co, 'https://aromalux.co', 'Aromaterapia y fragancias en Colombia', NULL, '2025-09-01', NULL, @site_13);
+CALL sp_upsert_website(@brand_aromalux, @country_cr, 'https://aromalux.cr', 'Aromaterapia y bienestar Costa Rica', NULL, '2025-11-01', NULL, @site_14);
+-- PureSense
+CALL sp_upsert_website(@brand_puresense, @country_ni, 'https://puresense.pe', 'Higiene artesanal para Nicaragua', NULL, '2025-09-15', NULL, @site_15);
+-- GiftEssence
+CALL sp_upsert_website(@brand_giftessence, @country_us, 'https://giftessence.us', 'Premium wellness gifts USA', NULL, '2025-07-01', NULL, @site_16);
+CALL sp_upsert_website(@brand_giftessence, @country_ni, 'https://giftessence.sv', 'Regalos de bienestar Nicaragua', NULL, '2025-10-01', NULL, @site_17);
 
--- 10. CATÁLOGO DE PRODUCTOS (100 productos vinculados a etheriaProductId 1-100)
+
+-- 10. CATÁLOGO DE PRODUCTOS 
 DELIMITER $$
 CREATE PROCEDURE sp_populate_dynamic_full()
 BEGIN
@@ -1239,12 +1232,8 @@ BEGIN
     SELECT currencyId INTO v_curr_jpy FROM Currencies WHERE currencyCode = 'JPY' AND isDeleted = 0 LIMIT 1;
 
     WHILE v_product_id <= 100 DO
-        SET v_website_id = ((v_product_id - 1) % 9) + 1;
-
-        SELECT brandId INTO v_brand_id
-          FROM Websites
-         WHERE websiteId = v_website_id
-         LIMIT 1;
+        SET v_website_id = ((v_product_id - 1) % 17) + 1;
+        SET v_brand_id = ((v_product_id - 1) % 5) + 1;
 
         CALL sp_upsert_product_catalog(
             v_product_id,
@@ -1262,15 +1251,23 @@ BEGIN
         CALL sp_upsert_website_product(v_website_id, v_catalog_id, 0, 1, v_website_product_id);
 
         CASE v_website_id
-            WHEN 1 THEN SET v_price = 25000.00;  SET v_currency_id = v_curr_crc;
-            WHEN 2 THEN SET v_price = 200000.00; SET v_currency_id = v_curr_cop;
-            WHEN 3 THEN SET v_price = 850.00;    SET v_currency_id = v_curr_mxn;
-            WHEN 4 THEN SET v_price = 50.00;     SET v_currency_id = v_curr_usd;
-            WHEN 5 THEN SET v_price = 900.00;    SET v_currency_id = v_curr_nio;
-            WHEN 6 THEN SET v_price = 45.00;     SET v_currency_id = v_curr_eur;
-            WHEN 7 THEN SET v_price = 400.00;    SET v_currency_id = v_curr_brl;
-            WHEN 8 THEN SET v_price = 55.00;     SET v_currency_id = v_curr_eur;
-            WHEN 9 THEN SET v_price = 6500.00;   SET v_currency_id = v_curr_jpy;
+            WHEN 1 THEN SET v_price = 25000.00;  SET v_currency_id = v_curr_crc; -- AromaLux CR (Original)
+            WHEN 2 THEN SET v_price = 200000.00; SET v_currency_id = v_curr_cop; -- Colombia
+            WHEN 3 THEN SET v_price = 850.00;    SET v_currency_id = v_curr_mxn; -- México
+            WHEN 4 THEN SET v_price = 50.00;     SET v_currency_id = v_curr_usd; -- Panamá / USD
+            WHEN 5 THEN SET v_price = 900.00;    SET v_currency_id = v_curr_nio; -- Nicaragua
+            WHEN 6 THEN SET v_price = 45.00;     SET v_currency_id = v_curr_eur; -- Europa
+            WHEN 7 THEN SET v_price = 400.00;    SET v_currency_id = v_curr_brl; -- EcoLuxe BR
+            WHEN 8 THEN SET v_price = 55.00;     SET v_currency_id = v_curr_eur; -- EcoLuxe FR
+            WHEN 9 THEN SET v_price = 6500.00;   SET v_currency_id = v_curr_jpy; -- EcoLuxe JP
+            WHEN 10 THEN SET v_price = 185000.00; SET v_currency_id = v_curr_cop; -- VitalCore CO
+            WHEN 11 THEN SET v_price = 350.00;    SET v_currency_id = v_curr_brl; -- VitalCore BR
+            WHEN 12 THEN SET v_price = 950.00;    SET v_currency_id = v_curr_mxn; -- DermaNatura MX
+            WHEN 13 THEN SET v_price = 175000.00; SET v_currency_id = v_curr_cop; -- AromaLux CO
+            WHEN 14 THEN SET v_price = 28000.00;  SET v_currency_id = v_curr_crc; -- AromaLux CR
+            WHEN 15 THEN SET v_price = 800.00;    SET v_currency_id = v_curr_nio; -- PureSense NI
+            WHEN 16 THEN SET v_price = 65.00;     SET v_currency_id = v_curr_usd; -- GiftEssence US
+            WHEN 17 THEN SET v_price = 750.00;    SET v_currency_id = v_curr_nio; -- GiftEssence NI
         END CASE;
 
         CALL sp_set_website_product_price(
@@ -1287,19 +1284,63 @@ DELIMITER ;
 CALL sp_populate_dynamic_full();
 DROP PROCEDURE IF EXISTS sp_populate_dynamic_full;  
 
--- 11. CLIENTES (Usando países existentes)
+-- 11. CLIENTES 
 CALL sp_register_customer('María',  'González', 'maria.gonzalez@crcr.com', 'hash123', '+506-8888-7777',   @country_cr, @cust1);
 CALL sp_register_customer('John',   'Smith',    'john.smith@us.com',       'hash456', '+1-305-555-1234',  @country_us, @cust2);
 CALL sp_register_customer('Carlos', 'López',    'carlos.lopez@coco.com',   'hash789', '+57-300-123-4567', @country_co, @cust3);
 CALL sp_register_customer('Ana',    'García',   'ana.garcia@mxmx.com',     'hash012', '+52-55-1234-5678', @country_mx, @cust4);
 CALL sp_register_customer('Luis',   'Ramírez',  'luis.ramirez@nini.com',   'hash345', '+505-8123-4567',   @country_ni, @cust5);
+CALL sp_register_customer('Alejandro', 'Díaz', 'user001@example.com', 'hash001', '+30932734539', @country_pa, @cust6);
+CALL sp_register_customer('Andrés', 'Silva', 'user002@example.com', 'hash002', '+61857232668', @country_ni, @cust7);
+CALL sp_register_customer('Ricardo', 'Díaz', 'user003@example.com', 'hash003', '+85950826208', @country_mx, @cust8);
+CALL sp_register_customer('Luis', 'Herrera', 'user004@example.com', 'hash004', '+5235555899',  @country_pa, @cust9);
+CALL sp_register_customer('Alejandro', 'Rivera', 'user005@example.com', 'hash005', '+13572775194', @country_co, @cust10);
+CALL sp_register_customer('Monica', 'Jiménez', 'user006@example.com', 'hash006', '+2875718152',  @country_co, @cust11);
+CALL sp_register_customer('Andrea', 'Ortiz', 'user007@example.com', 'hash007', '+20180346223', @country_pa, @cust12);
+CALL sp_register_customer('Diego', 'Rivera', 'user008@example.com', 'hash008', '+80843785903', @country_co, @cust13);
+CALL sp_register_customer('José', 'Rivera', 'user009@example.com', 'hash009', '+87672972597', @country_co, @cust14);
+CALL sp_register_customer('Andrés', 'Ortiz', 'user010@example.com', 'hash010', '+92915401487', @country_cr, @cust15);
+CALL sp_register_customer('Natalia', 'Rodríguez', 'user011@example.com', 'hash011', '+80173466219', @country_co, @cust16);
+CALL sp_register_customer('Juliana', 'Flores', 'user012@example.com', 'hash012', '+30901834280', @country_co, @cust17);
+CALL sp_register_customer('Ana', 'Ortiz', 'user013@example.com', 'hash013', '+91207918827', @country_cr, @cust18);
+CALL sp_register_customer('Roberto', 'Flores', 'user014@example.com', 'hash014', '+4149382425',  @country_co, @cust19);
+CALL sp_register_customer('María', 'Flores', 'user015@example.com', 'hash015', '+46502482554', @country_br, @cust20);
+CALL sp_register_customer('Laura', 'Vargas', 'user016@example.com', 'hash016', '+53707660630', @country_co, @cust21);
+CALL sp_register_customer('Sofía', 'Pérez', 'user017@example.com', 'hash017', '+23184791618', @country_mx, @cust22);
+CALL sp_register_customer('Ricardo', 'Medina', 'user018@example.com', 'hash018', '+88358589021', @country_cr, @cust23);
+CALL sp_register_customer('Alejandro', 'González', 'user019@example.com', 'hash019', '+30595155950', @country_cr, @cust24);
+CALL sp_register_customer('Miguel', 'Torres', 'user020@example.com', 'hash020', '+86110090412', @country_cr, @cust25);
+CALL sp_register_customer('Miguel', 'Flores', 'user021@example.com', 'hash021', '+87686905284', @country_co, @cust26);
+CALL sp_register_customer('Miguel', 'Gómez', 'user022@example.com', 'hash022', '+76421214426', @country_pa, @cust27);
 
--- 12. DIRECCIONES DE CLIENTES (Vinculadas a direcciones existentes)
-CALL sp_add_customer_address(@cust1, @addr_cr_1, 'Casa',        1, @cust_addr1);
-CALL sp_add_customer_address(@cust2, @addr_us_1, 'Office',      1, @cust_addr2);
-CALL sp_add_customer_address(@cust3, @addr_co_1, 'Apartamento', 1, @cust_addr3);
-CALL sp_add_customer_address(@cust4, @addr_mx_1, 'Casa',        1, @cust_addr4);
-CALL sp_add_customer_address(@cust5, @addr_ni_1, 'Casa',        1, @cust_addr5);
+-- 12. DIRECCIONES DE CLIENTES 
+CALL sp_add_customer_address(@cust1,  @addr_cr_1, 'Casa',        1, @cust_addr1);
+CALL sp_add_customer_address(@cust2,  @addr_us_1, 'Office',      1, @cust_addr2);
+CALL sp_add_customer_address(@cust3,  @addr_co_1, 'Apartamento', 1, @cust_addr3);
+CALL sp_add_customer_address(@cust4,  @addr_mx_1, 'Casa',        1, @cust_addr4);
+CALL sp_add_customer_address(@cust5,  @addr_ni_1, 'Casa',        1, @cust_addr5);
+CALL sp_add_customer_address(@cust6,  @addr_pa_1, 'Casa',        1, @cust_addr6);
+CALL sp_add_customer_address(@cust7,  @addr_ni_1, 'Casa',        1, @cust_addr7);
+CALL sp_add_customer_address(@cust8,  @addr_mx_1, 'Apartamento', 1, @cust_addr8);
+CALL sp_add_customer_address(@cust9,  @addr_pa_1, 'Casa',        1, @cust_addr9);
+CALL sp_add_customer_address(@cust10, @addr_co_1, 'Casa',        1, @cust_addr10);
+CALL sp_add_customer_address(@cust11, @addr_co_1, 'Oficina',     1, @cust_addr11);
+CALL sp_add_customer_address(@cust12, @addr_pa_1, 'Casa',        1, @cust_addr12);
+CALL sp_add_customer_address(@cust13, @addr_co_1, 'Casa',        1, @cust_addr13);
+CALL sp_add_customer_address(@cust14, @addr_co_1, 'Apartamento', 1, @cust_addr14);
+CALL sp_add_customer_address(@cust15, @addr_cr_1, 'Casa',        1, @cust_addr15);
+CALL sp_add_customer_address(@cust16, @addr_co_1, 'Casa',        1, @cust_addr16);
+CALL sp_add_customer_address(@cust17, @addr_co_1, 'Casa',        1, @cust_addr17);
+CALL sp_add_customer_address(@cust18, @addr_cr_1, 'Oficina',     1, @cust_addr18);
+CALL sp_add_customer_address(@cust19, @addr_co_1, 'Casa',        1, @cust_addr19);
+CALL sp_add_customer_address(@cust20, @addr_br_1, 'Casa',        1, @cust_addr20);
+CALL sp_add_customer_address(@cust21, @addr_co_1, 'Apartamento', 1, @cust_addr21);
+CALL sp_add_customer_address(@cust22, @addr_mx_1, 'Casa',        1, @cust_addr22);
+CALL sp_add_customer_address(@cust23, @addr_cr_1, 'Casa',        1, @cust_addr23);
+CALL sp_add_customer_address(@cust24, @addr_cr_1, 'Oficina',     1, @cust_addr24);
+CALL sp_add_customer_address(@cust25, @addr_cr_1, 'Casa',        1, @cust_addr25);
+CALL sp_add_customer_address(@cust26, @addr_co_1, 'Casa',        1, @cust_addr26);
+CALL sp_add_customer_address(@cust27, @addr_pa_1, 'Apartamento', 1, @cust_addr27);
 
 -- Curiers:
 CALL sp_register_courier(
@@ -1497,6 +1538,125 @@ CALL sp_place_order(
     @order_5b
 );
 
+-- -------------------------------------------------------
+-- Clientes 6, 9, 12, 27 · Panamá
+-- Nota: Como no hay un sitio específico de Panamá en tu nueva lista, 
+-- se mantiene @site_4 o se puede usar @site_16 (USA/Global)
+-- -------------------------------------------------------
+
+-- Orden 6-A
+CALL sp_place_order(@cust6, @site_4, @cust_addr6, @curr_usd, @rate_usd, 
+    '[{"websiteProductId":4, "quantity":1, "unitPriceLocal":45.00}, {"websiteProductId":13, "quantity":1, "unitPriceLocal":45.00}]', @order_6a);
+
+-- Orden 9-A
+CALL sp_place_order(@cust9, @site_4, @cust_addr9, @curr_usd, @rate_usd, 
+    '[{"websiteProductId":22, "quantity":2, "unitPriceLocal":55.00}]', @order_9a);
+
+-- Orden 12-A
+CALL sp_place_order(@cust12, @site_4, @cust_addr12, @curr_usd, @rate_usd, 
+    '[{"websiteProductId":31, "quantity":1, "unitPriceLocal":120.00}, {"websiteProductId":40, "quantity":1, "unitPriceLocal":120.00}]', @order_12a);
+
+-- Orden 27-A
+CALL sp_place_order(@cust27, @site_4, @cust_addr27, @curr_usd, @rate_usd, 
+    '[{"websiteProductId":4, "quantity":3, "unitPriceLocal":40.00}]', @order_27a);
+
+-- -------------------------------------------------------
+-- Clientes 7 · Nicaragua
+-- Usando @site_15 (PureSense NI) o @site_17 (GiftEssence NI)
+-- -------------------------------------------------------
+
+-- Orden 7-A (PureSense NI)
+CALL sp_place_order(@cust7, @site_15, @cust_addr7, @curr_nio, @rate_nio, 
+    '[{"websiteProductId":5, "quantity":2, "unitPriceLocal":850.00}, {"websiteProductId":14, "quantity":1, "unitPriceLocal":850.00}]', @order_7a);
+
+-- -------------------------------------------------------
+-- Clientes 8, 22 · México
+-- Usando @site_12 (DermaNatura MX)
+-- -------------------------------------------------------
+
+-- Orden 8-A
+CALL sp_place_order(@cust8, @site_12, @cust_addr8, @curr_mxn, @rate_mxn, 
+    '[{"websiteProductId":3, "quantity":1, "unitPriceLocal":1200.00}, {"websiteProductId":12, "quantity":2, "unitPriceLocal":1200.00}]', @order_8a);
+
+-- Orden 22-A
+CALL sp_place_order(@cust22, @site_12, @cust_addr22, @curr_mxn, @rate_mxn, 
+    '[{"websiteProductId":21, "quantity":1, "unitPriceLocal":950.00}]', @order_22a);
+
+-- -------------------------------------------------------
+-- Clientes 10, 11, 13, 14, 16, 17, 19, 21, 26 · Colombia
+-- Usando @site_10 (VitalCore CO) o @site_13 (AromaLux CO)
+-- -------------------------------------------------------
+
+-- Orden 10-A (VitalCore)
+CALL sp_place_order(@cust10, @site_10, @cust_addr10, @curr_cop, @rate_cop, 
+    '[{"websiteProductId":2, "quantity":1, "unitPriceLocal":150000.00}]', @order_10a);
+
+-- Orden 11-A (AromaLux)
+CALL sp_place_order(@cust11, @site_13, @cust_addr11, @curr_cop, @rate_cop, 
+    '[{"websiteProductId":11, "quantity":2, "unitPriceLocal":180000.00}, {"websiteProductId":20, "quantity":1, "unitPriceLocal":180000.00}]', @order_11a);
+
+-- Orden 13-A (VitalCore)
+CALL sp_place_order(@cust13, @site_10, @cust_addr13, @curr_cop, @rate_cop, 
+    '[{"websiteProductId":29, "quantity":1, "unitPriceLocal":210000.00}]', @order_13a);
+
+-- Orden 14-A (AromaLux)
+CALL sp_place_order(@cust14, @site_13, @cust_addr14, @curr_cop, @rate_cop, 
+    '[{"websiteProductId":38, "quantity":3, "unitPriceLocal":150000.00}]', @order_14a);
+
+-- Orden 16-A (VitalCore)
+CALL sp_place_order(@cust16, @site_10, @cust_addr16, @curr_cop, @rate_cop, 
+    '[{"websiteProductId":2, "quantity":1, "unitPriceLocal":190000.00}]', @order_16a);
+
+-- Orden 17-A (AromaLux)
+CALL sp_place_order(@cust17, @site_13, @cust_addr17, @curr_cop, @rate_cop, 
+    '[{"websiteProductId":11, "quantity":1, "unitPriceLocal":175000.00}]', @order_17a);
+
+-- Orden 19-A (VitalCore)
+CALL sp_place_order(@cust19, @site_10, @cust_addr19, @curr_cop, @rate_cop, 
+    '[{"websiteProductId":20, "quantity":2, "unitPriceLocal":160000.00}]', @order_19a);
+
+-- Orden 21-A (AromaLux)
+CALL sp_place_order(@cust21, @site_13, @cust_addr21, @curr_cop, @rate_cop, 
+    '[{"websiteProductId":29, "quantity":1, "unitPriceLocal":200000.00}]', @order_21a);
+
+-- Orden 26-A (VitalCore)
+CALL sp_place_order(@cust26, @site_10, @cust_addr26, @curr_cop, @rate_cop, 
+    '[{"websiteProductId":38, "quantity":1, "unitPriceLocal":155000.00}]', @order_26a);
+
+-- -------------------------------------------------------
+-- Clientes 15, 18, 23, 24, 25 · Costa Rica
+-- Usando @site_14 (AromaLux CR) o @site_1 (Original)
+-- -------------------------------------------------------
+
+-- Orden 15-A
+CALL sp_place_order(@cust15, @site_14, @cust_addr15, @curr_crc, @rate_crc, 
+    '[{"websiteProductId":1, "quantity":2, "unitPriceLocal":22000.00}]', @order_15a);
+
+-- Orden 18-A
+CALL sp_place_order(@cust18, @site_14, @cust_addr18, @curr_crc, @rate_crc, 
+    '[{"websiteProductId":10, "quantity":1, "unitPriceLocal":30000.00}, {"websiteProductId":19, "quantity":1, "unitPriceLocal":30000.00}]', @order_18a);
+
+-- Orden 23-A
+CALL sp_place_order(@cust23, @site_14, @cust_addr23, @curr_crc, @rate_crc, 
+    '[{"websiteProductId":28, "quantity":1, "unitPriceLocal":25000.00}]', @order_23a);
+
+-- Orden 24-A
+CALL sp_place_order(@cust24, @site_14, @cust_addr24, @curr_crc, @rate_crc, 
+    '[{"websiteProductId":37, "quantity":4, "unitPriceLocal":22000.00}]', @order_24a);
+
+-- Orden 25-A
+CALL sp_place_order(@cust25, @site_14, @cust_addr25, @curr_crc, @rate_crc, 
+    '[{"websiteProductId":1, "quantity":1, "unitPriceLocal":25000.00}]', @order_25a);
+
+-- -------------------------------------------------------
+-- Cliente 20 · Brasil
+-- Usando @site_11 (VitalCore BR) o @site_7 (EcoLuxe BR)
+-- -------------------------------------------------------
+
+-- Orden 20-A (VitalCore BR)
+CALL sp_place_order(@cust20, @site_11, @cust_addr20, @curr_usd, @rate_usd, 
+    '[{"websiteProductId":13, "quantity":2, "unitPriceLocal":60.00}]', @order_20a);
+
 -- ordenes: 
 CALL sp_update_order_status(@order_1a, 'CONFIRMADA', NULL);
 CALL sp_update_order_status(@order_1b, 'CONFIRMADA', NULL);
@@ -1508,6 +1668,28 @@ CALL sp_update_order_status(@order_4a, 'CONFIRMADA', NULL);
 CALL sp_update_order_status(@order_4b, 'CONFIRMADA', NULL);
 CALL sp_update_order_status(@order_5a, 'CONFIRMADA', NULL);
 CALL sp_update_order_status(@order_5b, 'CONFIRMADA', NULL);
+CALL sp_update_order_status(@order_6a, 'CONFIRMADA', NULL);
+CALL sp_update_order_status(@order_7a, 'CONFIRMADA', NULL);
+CALL sp_update_order_status(@order_8a, 'CONFIRMADA', NULL);
+CALL sp_update_order_status(@order_9a, 'CONFIRMADA', NULL);
+CALL sp_update_order_status(@order_10a, 'CONFIRMADA', NULL);
+CALL sp_update_order_status(@order_11a, 'CONFIRMADA', NULL);
+CALL sp_update_order_status(@order_12a, 'CONFIRMADA', NULL);
+CALL sp_update_order_status(@order_13a, 'CONFIRMADA', NULL);
+CALL sp_update_order_status(@order_14a, 'CONFIRMADA', NULL);
+CALL sp_update_order_status(@order_15a, 'CONFIRMADA', NULL);
+CALL sp_update_order_status(@order_16a, 'CONFIRMADA', NULL);
+CALL sp_update_order_status(@order_17a, 'CONFIRMADA', NULL);
+CALL sp_update_order_status(@order_18a, 'CONFIRMADA', NULL);
+CALL sp_update_order_status(@order_19a, 'CONFIRMADA', NULL);
+CALL sp_update_order_status(@order_20a, 'CONFIRMADA', NULL);
+CALL sp_update_order_status(@order_21a, 'CONFIRMADA', NULL);
+CALL sp_update_order_status(@order_22a, 'CONFIRMADA', NULL);
+CALL sp_update_order_status(@order_23a, 'CONFIRMADA', NULL);
+CALL sp_update_order_status(@order_24a, 'CONFIRMADA', NULL);
+CALL sp_update_order_status(@order_25a, 'CONFIRMADA', NULL);
+CALL sp_update_order_status(@order_26a, 'CONFIRMADA', NULL);
+CALL sp_update_order_status(@order_27a, 'CONFIRMADA', NULL);
 
 CALL sp_create_shipping_record(
     @order_1a, @courier_correos_cr, 'CRCR-2026-000101',
@@ -1593,6 +1775,48 @@ CALL sp_create_shipping_record(
     @ship_5b
 );
 
+-- cust6 / PA — DHL Express / USD
+CALL sp_create_shipping_record(@order_6a, @courier_dhl, 'DHL-PA-0601', 25.00, @curr_usd, @rate_usd, '2026-05-10', @country_pa, 'PA-2026-00601', @ship_6a);
+
+-- cust7 / NI — DHL Express / NIO
+CALL sp_create_shipping_record(@order_7a, @courier_dhl, 'DHL-NI-0701', 190.00, @curr_nio, @rate_nio, '2026-05-12', @country_ni, 'NI-2026-00701', @ship_7a);
+
+-- cust8 / MX — Estafeta / MXN
+CALL sp_create_shipping_record(@order_8a, @courier_estafeta, 'EST-MX-0801', 130.00, @curr_mxn, @rate_mxn, '2026-05-14', @country_mx, 'MX-2026-00801', @ship_8a);
+
+-- cust9 / PA — DHL Express / USD
+CALL sp_create_shipping_record(@order_9a, @courier_dhl, 'DHL-PA-0901', 28.00, @curr_usd, @rate_usd, '2026-05-15', @country_pa, 'PA-2026-00901', @ship_9a);
+
+-- cust10 a 14 / CO — Servientrega / COP
+CALL sp_create_shipping_record(@order_10a, @courier_servientrega, 'SRV-CO-1001', 22000.00, @curr_cop, @rate_cop, '2026-05-10', @country_co, 'CO-2026-01001', @ship_10a);
+CALL sp_create_shipping_record(@order_11a, @courier_servientrega, 'SRV-CO-1101', 22000.00, @curr_cop, @rate_cop, '2026-05-11', @country_co, 'CO-2026-01101', @ship_11a);
+CALL sp_create_shipping_record(@order_12a, @courier_dhl, 'DHL-PA-1201', 30.00, @curr_usd, @rate_usd, '2026-05-12', @country_pa, 'PA-2026-01201', @ship_12a);
+CALL sp_create_shipping_record(@order_13a, @courier_servientrega, 'SRV-CO-1301', 22000.00, @curr_cop, @rate_cop, '2026-05-13', @country_co, 'CO-2026-01301', @ship_13a);
+CALL sp_create_shipping_record(@order_14a, @courier_servientrega, 'SRV-CO-1401', 22000.00, @curr_cop, @rate_cop, '2026-05-14', @country_co, 'CO-2026-01401', @ship_14a);
+
+-- cust15 / CR — Correos CR / CRC
+CALL sp_create_shipping_record(@order_15a, @courier_correos_cr, 'CR-1501', 2800.00, @curr_crc, @rate_crc, '2026-05-15', @country_cr, 'CR-2026-01501', @ship_15a);
+
+-- cust16, 17, 19 / CO — Servientrega / COP
+CALL sp_create_shipping_record(@order_16a, @courier_servientrega, 'SRV-CO-1601', 22000.00, @curr_cop, @rate_cop, '2026-05-16', @country_co, 'CO-2026-01601', @ship_16a);
+CALL sp_create_shipping_record(@order_17a, @courier_servientrega, 'SRV-CO-1701', 22000.00, @curr_cop, @rate_cop, '2026-05-17', @country_co, 'CO-2026-01701', @ship_17a);
+CALL sp_create_shipping_record(@order_19a, @courier_servientrega, 'SRV-CO-1901', 22000.00, @curr_cop, @rate_cop, '2026-05-19', @country_co, 'CO-2026-01901', @ship_19a);
+
+-- cust18, 23, 24, 25 / CR — Correos CR / CRC
+CALL sp_create_shipping_record(@order_18a, @courier_correos_cr, 'CR-1801', 2800.00, @curr_crc, @rate_crc, '2026-05-18', @country_cr, 'CR-2026-01801', @ship_18a);
+CALL sp_create_shipping_record(@order_23a, @courier_correos_cr, 'CR-2301', 2800.00, @curr_crc, @rate_crc, '2026-05-20', @country_cr, 'CR-2026-02301', @ship_23a);
+CALL sp_create_shipping_record(@order_24a, @courier_correos_cr, 'CR-2401', 2800.00, @curr_crc, @rate_crc, '2026-05-21', @country_cr, 'CR-2026-02401', @ship_24a);
+CALL sp_create_shipping_record(@order_25a, @courier_correos_cr, 'CR-2501', 2800.00, @curr_crc, @rate_crc, '2026-05-22', @country_cr, 'CR-2026-02501', @ship_25a);
+
+-- cust20 / BR — FedEx / BRL (Asumiendo variable @curr_brl y @rate_brl)
+CALL sp_create_shipping_record(@order_20a, @courier_fedex, 'FDX-BR-2001', 45.00, @curr_usd, @rate_usd, '2026-05-20', @country_br, 'BR-2026-02001', @ship_20a);
+
+-- cust22 / MX — Estafeta / MXN
+CALL sp_create_shipping_record(@order_22a, @courier_estafeta, 'EST-MX-2201', 140.00, @curr_mxn, @rate_mxn, '2026-05-22', @country_mx, 'MX-2026-02201', @ship_22a);
+
+-- cust27 / PA — DHL Express / USD
+CALL sp_create_shipping_record(@order_27a, @courier_dhl, 'DHL-PA-2701', 35.00, @curr_usd, @rate_usd, '2026-05-23', @country_pa, 'PA-2026-02701', @ship_27a);
+
 -- Entregados
 CALL sp_update_shipping_status(@ship_1a, 'ENTREGADO', '2026-05-13');
 CALL sp_update_shipping_status(@ship_2a, 'ENTREGADO', '2026-05-09');
@@ -1603,3 +1827,14 @@ CALL sp_update_shipping_status(@ship_5a, 'ENTREGADO', '2026-05-16');
 CALL sp_update_shipping_status(@ship_1b, 'EN_TRANSITO', NULL);
 CALL sp_update_shipping_status(@ship_2b, 'EN_TRANSITO', NULL);
 CALL sp_update_shipping_status(@ship_4a, 'EN_TRANSITO', NULL);
+
+CALL sp_update_shipping_status(@ship_6a, 'ENTREGADO', '2026-05-15');
+CALL sp_update_shipping_status(@ship_10a, 'ENTREGADO', '2026-05-15');
+CALL sp_update_shipping_status(@ship_15a, 'ENTREGADO', '2026-05-18');
+
+CALL sp_update_shipping_status(@ship_7a, 'EN_TRANSITO', NULL);
+CALL sp_update_shipping_status(@ship_8a, 'EN_TRANSITO', NULL);
+CALL sp_update_shipping_status(@ship_11a, 'EN_TRANSITO', NULL);
+CALL sp_update_shipping_status(@ship_12a, 'EN_TRANSITO', NULL);
+CALL sp_update_shipping_status(@ship_13a, 'EN_TRANSITO', NULL);
+CALL sp_update_shipping_status(@ship_20a, 'EN_TRANSITO', NULL);
