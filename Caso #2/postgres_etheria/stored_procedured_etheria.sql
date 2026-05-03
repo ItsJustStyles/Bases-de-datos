@@ -1807,9 +1807,9 @@ DECLARE
     v_price_id    INTEGER;
     v_fecha_inicio DATE := '2026-01-01';
     v_datos TEXT[][] := ARRAY[
-        ['Aceite de Lavanda de Provenza', '25.50'],
+        ['Aceite de Lavanda de Provenza', '35.50'],
         ['Esencia de Sándalo de Japón', '45.00'],
-        ['Extracto de Eucalipto Australiano', '15.75'],
+        ['Extracto de Eucalipto Australiano', '45.75'],
         ['Serum Facial de Algas Rojas', '85.00'],
         ['Crema Hidratante de Karité Dorado', '62.30'],
         ['Vela Artesanal de Vainilla y Mirra', '22.00'],
@@ -2427,7 +2427,6 @@ BEGIN
 END $$;
 
 -- inventorystock
-
 DO $$
 DECLARE
     v_prod_id     INTEGER;
@@ -2442,4 +2441,43 @@ BEGIN
     );
 
     RAISE NOTICE 'Stock recalculado exitosamente. Saldo auditado: %', v_final_stock;
+END $$;
+
+-- Configuracion inicial:
+
+DO $$
+DECLARE
+    v_prod_record RECORD;
+    v_warehouse_id INTEGER;
+    v_stock_id     INTEGER;
+    v_initial_qty  CONSTANT INTEGER := 600;
+BEGIN
+    SELECT warehouseId INTO v_warehouse_id 
+    FROM Warehouses 
+    WHERE isDeleted = FALSE 
+    ORDER BY warehouseId ASC 
+    LIMIT 1;
+
+    IF v_warehouse_id IS NULL THEN
+        RAISE EXCEPTION 'No se encontró un almacén activo para cargar el stock.';
+    END IF;
+
+    RAISE NOTICE 'Iniciando carga de stock en Almacén ID: %', v_warehouse_id;
+    FOR v_prod_record IN 
+        SELECT productId, productName 
+        FROM Products 
+        WHERE isDeleted = FALSE
+    LOOP
+        CALL sp_upsert_inventory_stock(
+            v_prod_record.productId, 
+            v_warehouse_id, 
+            v_initial_qty, 
+            v_stock_id
+        );
+
+        RAISE NOTICE 'Stock de 600 unidades cargado para: % (ID: %)', 
+                     v_prod_record.productName, v_prod_record.productId;
+    END LOOP;
+
+    RAISE NOTICE 'Carga masiva completada con éxito.';
 END $$;

@@ -1254,11 +1254,11 @@ BEGIN
             WHEN 1 THEN SET v_price = 25000.00;  SET v_currency_id = v_curr_crc; -- AromaLux CR (Original)
             WHEN 2 THEN SET v_price = 200000.00; SET v_currency_id = v_curr_cop; -- Colombia
             WHEN 3 THEN SET v_price = 850.00;    SET v_currency_id = v_curr_mxn; -- México
-            WHEN 4 THEN SET v_price = 50.00;     SET v_currency_id = v_curr_usd; -- Panamá / USD
+            WHEN 4 THEN SET v_price = 250.00;     SET v_currency_id = v_curr_usd; -- Panamá / USD
             WHEN 5 THEN SET v_price = 900.00;    SET v_currency_id = v_curr_nio; -- Nicaragua
-            WHEN 6 THEN SET v_price = 45.00;     SET v_currency_id = v_curr_eur; -- Europa
+            WHEN 6 THEN SET v_price = 450.00;     SET v_currency_id = v_curr_eur; -- Europa
             WHEN 7 THEN SET v_price = 400.00;    SET v_currency_id = v_curr_brl; -- EcoLuxe BR
-            WHEN 8 THEN SET v_price = 55.00;     SET v_currency_id = v_curr_eur; -- EcoLuxe FR
+            WHEN 8 THEN SET v_price = 505.00;     SET v_currency_id = v_curr_eur; -- EcoLuxe FR
             WHEN 9 THEN SET v_price = 6500.00;   SET v_currency_id = v_curr_jpy; -- EcoLuxe JP
             WHEN 10 THEN SET v_price = 185000.00; SET v_currency_id = v_curr_cop; -- VitalCore CO
             WHEN 11 THEN SET v_price = 350.00;    SET v_currency_id = v_curr_brl; -- VitalCore BR
@@ -1266,7 +1266,7 @@ BEGIN
             WHEN 13 THEN SET v_price = 175000.00; SET v_currency_id = v_curr_cop; -- AromaLux CO
             WHEN 14 THEN SET v_price = 28000.00;  SET v_currency_id = v_curr_crc; -- AromaLux CR
             WHEN 15 THEN SET v_price = 800.00;    SET v_currency_id = v_curr_nio; -- PureSense NI
-            WHEN 16 THEN SET v_price = 65.00;     SET v_currency_id = v_curr_usd; -- GiftEssence US
+            WHEN 16 THEN SET v_price = 650.00;     SET v_currency_id = v_curr_usd; -- GiftEssence US
             WHEN 17 THEN SET v_price = 750.00;    SET v_currency_id = v_curr_nio; -- GiftEssence NI
         END CASE;
 
@@ -1546,7 +1546,7 @@ CALL sp_place_order(
 
 -- Orden 6-A
 CALL sp_place_order(@cust6, @site_4, @cust_addr6, @curr_usd, @rate_usd, 
-    '[{"websiteProductId":4, "quantity":1, "unitPriceLocal":45.00}, {"websiteProductId":13, "quantity":1, "unitPriceLocal":45.00}]', @order_6a);
+    '[{"websiteProductId":4, "quantity":1, "unitPriceLocal":100.00}, {"websiteProductId":13, "quantity":1, "unitPriceLocal":100.00}]', @order_6a);
 
 -- Orden 9-A
 CALL sp_place_order(@cust9, @site_4, @cust_addr9, @curr_usd, @rate_usd, 
@@ -1693,7 +1693,7 @@ CALL sp_update_order_status(@order_27a, 'CONFIRMADA', NULL);
 
 CALL sp_create_shipping_record(
     @order_1a, @courier_correos_cr, 'CRCR-2026-000101',
-    3500.00, @curr_crc, @rate_crc,
+    350.00, @curr_crc, @rate_crc,
     '2026-05-15', @country_cr,
     'CR-2026-00101',
     @ship_1a
@@ -1727,7 +1727,7 @@ CALL sp_create_shipping_record(
 -- cust3 / CO — Servientrega / COP
 CALL sp_create_shipping_record(
     @order_3a, @courier_servientrega, 'SVRG-2026-CO-0301',
-    25000.00, @curr_cop, @rate_cop,
+    2500.00, @curr_cop, @rate_cop,
     '2026-05-14', @country_co,
     'CO-2026-00301',
     @ship_3a
@@ -1752,7 +1752,7 @@ CALL sp_create_shipping_record(
 
 CALL sp_create_shipping_record(
     @order_4b, @courier_estafeta, 'ESTF-2026-MX-0402',
-    150.00, @curr_mxn, @rate_mxn,
+    110.00, @curr_mxn, @rate_mxn,
     '2026-05-13', @country_mx,
     'MX-2026-00402',
     @ship_4b
@@ -1761,7 +1761,7 @@ CALL sp_create_shipping_record(
 -- cust5 / NI — DHL Express / NIO
 CALL sp_create_shipping_record(
     @order_5a, @courier_dhl, 'DHL-2026-NI-0501',
-    180.00, @curr_nio, @rate_nio,
+    100.00, @curr_nio, @rate_nio,
     '2026-05-17', @country_ni,
     'NI-2026-00501',
     @ship_5a
@@ -1779,10 +1779,10 @@ CALL sp_create_shipping_record(
 CALL sp_create_shipping_record(@order_6a, @courier_dhl, 'DHL-PA-0601', 25.00, @curr_usd, @rate_usd, '2026-05-10', @country_pa, 'PA-2026-00601', @ship_6a);
 
 -- cust7 / NI — DHL Express / NIO
-CALL sp_create_shipping_record(@order_7a, @courier_dhl, 'DHL-NI-0701', 190.00, @curr_nio, @rate_nio, '2026-05-12', @country_ni, 'NI-2026-00701', @ship_7a);
+CALL sp_create_shipping_record(@order_7a, @courier_dhl, 'DHL-NI-0701', 10.00, @curr_nio, @rate_nio, '2026-05-12', @country_ni, 'NI-2026-00701', @ship_7a);
 
 -- cust8 / MX — Estafeta / MXN
-CALL sp_create_shipping_record(@order_8a, @courier_estafeta, 'EST-MX-0801', 130.00, @curr_mxn, @rate_mxn, '2026-05-14', @country_mx, 'MX-2026-00801', @ship_8a);
+CALL sp_create_shipping_record(@order_8a, @courier_estafeta, 'EST-MX-0801', 10.00, @curr_mxn, @rate_mxn, '2026-05-14', @country_mx, 'MX-2026-00801', @ship_8a);
 
 -- cust9 / PA — DHL Express / USD
 CALL sp_create_shipping_record(@order_9a, @courier_dhl, 'DHL-PA-0901', 28.00, @curr_usd, @rate_usd, '2026-05-15', @country_pa, 'PA-2026-00901', @ship_9a);

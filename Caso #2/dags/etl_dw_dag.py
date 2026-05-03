@@ -7,9 +7,6 @@ from decimal import Decimal
 import pandas as pd
 from sqlalchemy import create_engine, text
 
-# ─────────────────────────────────────────────────────────────
-#  LOGGING
-# ─────────────────────────────────────────────────────────────
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s  %(levelname)-8s  %(message)s",
@@ -17,12 +14,6 @@ logging.basicConfig(
 )
 log = logging.getLogger(__name__)
 
-# ─────────────────────────────────────────────────────────────
-#  CONEXIONES
-#  Los hostnames son los nombres de servicio de Docker Compose.
-#  Si ejecutas fuera de Docker cambia a 127.0.0.1 y los puertos
-#  mapeados en el compose (5433, 3307, 6001).
-# ─────────────────────────────────────────────────────────────
 ETHERIA_URL = (
     "postgresql+psycopg2://etheria:etheria123@etheria_db:5432/etheria_global_db"
 )
@@ -33,10 +24,6 @@ DYNAMIC_URL = (
 DWH_URL = (
     "postgresql+psycopg2://analytics_user:dwh_password@data_warehouse:5432/warehouse"
 )
-
-# ─────────────────────────────────────────────────────────────
-#  ENGINES (lazy — se crean una vez)
-# ─────────────────────────────────────────────────────────────
 _engines: dict = {}
 
 
@@ -49,11 +36,6 @@ def get_engine(name: str):
         }
         _engines[name] = create_engine(url_map[name], pool_pre_ping=True)
     return _engines[name]
-
-
-# ─────────────────────────────────────────────────────────────
-#  HELPERS GENERALES
-# ─────────────────────────────────────────────────────────────
 
 def read_sql(query: str, engine_name: str, params: dict | None = None) -> pd.DataFrame:
     """Lee una query y devuelve un DataFrame."""
@@ -77,11 +59,6 @@ def get_fecha_sk(target_date: date | None) -> int:
         {"d": target_date},
     )
     return int(df["fecha_sk"].iloc[0]) if not df.empty else -1
-
-
-# ─────────────────────────────────────────────────────────────
-#  AUDIT LOG
-# ─────────────────────────────────────────────────────────────
 
 def audit_start(dag_name: str, task_name: str) -> int:
     """Abre un registro de auditoría y devuelve el log_id."""
@@ -138,12 +115,6 @@ def audit_end(
             },
         )
 
-
-# ─────────────────────────────────────────────────────────────
-#  TAREA 1 — dim_pais
-#  Fuente: Etheria.Countries (fuente maestra de países)
-# ─────────────────────────────────────────────────────────────
-
 def load_dim_pais() -> None:
     log_id = audit_start("etl_holding", "load_dim_pais")
     inserted = updated = rejected = 0
@@ -189,12 +160,6 @@ def load_dim_pais() -> None:
         audit_end(log_id, "ERROR", error_message=str(e))
         log.error("dim_pais FAILED: %s", e)
         raise
-
-
-# ─────────────────────────────────────────────────────────────
-#  TAREA 2 — dim_proveedor
-#  Fuente: Etheria.Suppliers + Countries
-# ─────────────────────────────────────────────────────────────
 
 def load_dim_proveedor() -> None:
     log_id = audit_start("etl_holding", "load_dim_proveedor")
@@ -257,12 +222,6 @@ def load_dim_proveedor() -> None:
         log.error("dim_proveedor FAILED: %s", e)
         raise
 
-
-# ─────────────────────────────────────────────────────────────
-#  TAREA 3 — dim_marca
-#  Fuente: Dynamic.Brands
-# ─────────────────────────────────────────────────────────────
-
 def load_dim_marca() -> None:
     log_id = audit_start("etl_holding", "load_dim_marca")
     inserted = updated = rejected = 0
@@ -315,12 +274,6 @@ def load_dim_marca() -> None:
         log.error("dim_marca FAILED: %s", e)
         raise
 
-
-# ─────────────────────────────────────────────────────────────
-#  TAREA 4 — dim_courier
-#  Fuente: Dynamic.Couriers
-# ─────────────────────────────────────────────────────────────
-
 def load_dim_courier() -> None:
     log_id = audit_start("etl_holding", "load_dim_courier")
     inserted = updated = rejected = 0
@@ -372,17 +325,6 @@ def load_dim_courier() -> None:
         audit_end(log_id, "ERROR", error_message=str(e))
         log.error("dim_courier FAILED: %s", e)
         raise
-
-
-# ─────────────────────────────────────────────────────────────
-#  TAREA 5 — dim_cliente  (SCD Tipo 2)
-#  Fuente: Dynamic.Customers + Countries
-#  Lógica SCD2:
-#    - Si el cliente no existe → INSERT nuevo registro current
-#    - Si existe pero cambió email o nombre → cierra el anterior
-#      (valid_to = hoy - 1) e inserta uno nuevo
-#    - Si no cambió → no hace nada
-# ─────────────────────────────────────────────────────────────
 
 def load_dim_cliente() -> None:
     log_id = audit_start("etl_holding", "load_dim_cliente")
@@ -488,19 +430,6 @@ def load_dim_cliente() -> None:
         audit_end(log_id, "ERROR", error_message=str(e))
         log.error("dim_cliente FAILED: %s", e)
         raise
-
-
-# ─────────────────────────────────────────────────────────────
-#  TAREA 6 — dim_producto  (SCD Tipo 2)
-#  Fuente: Etheria.Products + ProductCategories + MeasurementUnits
-#          + ProductPrices (precio vigente hoy)
-#          + Dynamic.ProductCatalog (branded_name, category_label)
-#
-#  Clave natural : etheria_product_id
-#  Campos SCD2   : product_name, category_name, base_unit,
-#                  unit_weight_kg, unit_volume_m3, branded_name,
-#                  category_label, sale_price_usd
-# ─────────────────────────────────────────────────────────────
 
 def load_dim_producto() -> None:
     log_id = audit_start("etl_holding", "load_dim_producto")
@@ -675,12 +604,6 @@ def load_dim_producto() -> None:
         raise
 
 
-# ─────────────────────────────────────────────────────────────
-#  TAREA 7 — fact_compras
-#  Fuente: Etheria.BulkPurchases + Suppliers + Countries
-#          + ImportPermits (costo de permisos agregado por bulkId)
-# ─────────────────────────────────────────────────────────────
-
 def load_fact_compras() -> None:
     log_id = audit_start("etl_holding", "load_fact_compras")
     inserted = rejected = 0
@@ -791,12 +714,6 @@ def load_fact_compras() -> None:
         log.error("fact_compras FAILED: %s", e)
         raise
 
-
-# ─────────────────────────────────────────────────────────────
-#  TAREA 8 — fact_inventario
-#  Fuente: Etheria.InventoryHub (un registro por movimiento)
-# ─────────────────────────────────────────────────────────────
-
 def load_fact_inventario() -> None:
     log_id = audit_start("etl_holding", "load_fact_inventario")
     inserted = rejected = 0
@@ -881,23 +798,6 @@ def load_fact_inventario() -> None:
         audit_end(log_id, "ERROR", error_message=str(e))
         log.error("fact_inventario FAILED: %s", e)
         raise
-
-
-# ─────────────────────────────────────────────────────────────
-#  TAREA 9 — fact_ventas
-#  Fuente principal: Dynamic.OrderItems (granularidad 1 fila/ítem)
-#
-#  Joins Dynamic:
-#    OrderItems → Orders → Customers → Countries (pais_sk del cliente)
-#                       → Currencies → currencyCode
-#                       → Websites → Brands (marca_sk)
-#    OrderItems → WebsiteProducts → ProductCatalog → etheriaProductId
-#    Orders     → ShippingRecords → Couriers (courier_sk, costo, estado, entregas)
-#
-#  Enriquecimiento desde Etheria:
-#    etheriaProductId → ProductPrices (costo vigente Etheria → Dynamic)
-#    → costo_etheria_usd → margen_bruto_usd = subtotal_usd − costo_etheria_usd
-# ─────────────────────────────────────────────────────────────
 
 def load_fact_ventas() -> None:
     log_id = audit_start("etl_holding", "load_fact_ventas")
@@ -1103,11 +1003,6 @@ def load_fact_ventas() -> None:
         log.error("fact_ventas FAILED: %s", e)
         raise
 
-
-# ─────────────────────────────────────────────────────────────
-#  PIPELINE COMPLETO
-# ─────────────────────────────────────────────────────────────
-
 TASKS = [
     ("dim_pais",        load_dim_pais),
     ("dim_proveedor",   load_dim_proveedor),
@@ -1146,9 +1041,6 @@ def run_etl() -> None:
     log.info("═" * 60)
 
 
-# ─────────────────────────────────────────────────────────────
-#  AIRFLOW DAG (opcional — se activa solo cuando Airflow lo importa)
-# ─────────────────────────────────────────────────────────────
 try:
     from airflow import DAG
     from airflow.operators.python import PythonOperator
@@ -1187,12 +1079,7 @@ try:
         t_cliente    >> t_ventas
 
 except ImportError:
-    # Airflow no está instalado — el script corre standalone sin problema
-    dag = None  # type: ignore
+    dag = None  
 
-
-# ─────────────────────────────────────────────────────────────
-#  ENTRY POINT STANDALONE
-# ─────────────────────────────────────────────────────────────
 if __name__ == "__main__":
     run_etl()
