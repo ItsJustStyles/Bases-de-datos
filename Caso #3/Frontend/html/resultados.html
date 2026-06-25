@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gathel - Resultados</title>
+    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+    <link rel="stylesheet" href="../css/resultados.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+
+<body>
+
+    <!-- NAVBAR -->
+    <nav class="navbar">
+        <div class="nav-brand">
+            <span class="brand-icon"><i class='bx bx-game'></i></span>
+            <span class="brand-name">Gathel</span>
+        </div>
+        <div class="nav-links">
+            <a href="inicioGathel.html" class="nav-link"><i class='bx bx-home'></i> Inicio</a>
+            <a href="proposiciones.html" class="nav-link"><i class='bx bx-bulb'></i> Proposiciones</a>
+            <a href="misProposiciones.html" class="nav-link"><i class='bx bx-user-check'></i> Sobre mí</a>
+            <a href="misPredicciones.html" class="nav-link"><i class='bx bx-target-lock'></i> Mis Predicciones</a>
+            <a href="billetera.html" class="nav-link"><i class='bx bx-wallet'></i> Billetera</a>
+            <a href="resultados.html" class="nav-link active"><i class='bx bx-trophy'></i> Resultados</a>
+        </div>
+        <div class="nav-user">
+            <span class="nav-username" id="nav-username">Jugador</span>
+            <button class="btn-logout" id="btn-logout"><i class='bx bx-log-out'></i> Salir</button>
+        </div>
+    </nav>
+
+    <main class="main-content">
+
+        <!-- ENCABEZADO -->
+        <div class="page-header">
+            <div>
+                <h1 class="page-title">Resultados</h1>
+                <p class="page-subtitle">Proposiciones cerradas y el desempeño de tus predicciones.</p>
+            </div>
+            <div class="header-balance">
+                <div class="balance-chip">
+                    <i class='bx bx-coin-stack'></i>
+                    <span id="header-points">—</span> pts
+                </div>
+                <div class="balance-chip money">
+                    <i class='bx bx-dollar-circle'></i>
+                    $<span id="header-money">—</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- RESUMEN DE DESEMPEÑO -->
+        <div class="stats-grid" id="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon icon-total"><i class='bx bx-list-check'></i></div>
+                <div class="stat-info">
+                    <span class="stat-value" id="stat-total">—</span>
+                    <span class="stat-label">Predicciones totales</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon icon-won"><i class='bx bx-trophy'></i></div>
+                <div class="stat-info">
+                    <span class="stat-value" id="stat-won">—</span>
+                    <span class="stat-label">Ganadas</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon icon-lost"><i class='bx bx-x-circle'></i></div>
+                <div class="stat-info">
+                    <span class="stat-value" id="stat-lost">—</span>
+                    <span class="stat-label">Perdidas</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon icon-pct"><i class='bx bx-bar-chart-alt-2'></i></div>
+                <div class="stat-info">
+                    <span class="stat-value" id="stat-pct">—</span>
+                    <span class="stat-label">% acierto</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- FILTROS -->
+        <div class="filters-bar">
+            <div class="search-box">
+                <i class='bx bx-search'></i>
+                <input type="text" id="search-input" placeholder="Buscar por sujeto o texto...">
+            </div>
+            <div class="filter-tabs" id="filter-tabs">
+                <button class="filter-tab active" data-filter="all">Todos</button>
+                <button class="filter-tab" data-filter="won">Ganados</button>
+                <button class="filter-tab" data-filter="lost">Perdidos</button>
+                <button class="filter-tab" data-filter="void">Anulados</button>
+                <button class="filter-tab" data-filter="no-pred">Sin predicción</button>
+            </div>
+        </div>
+
+        <!-- LISTA DE RESULTADOS -->
+        <div id="results-list" class="results-list">
+            <!-- Se llena dinámicamente -->
+        </div>
+
+        <!-- BOTÓN CARGAR MÁS -->
+        <div style="text-align:center; margin: 28px 0;">
+            <button id="btn-cargar-mas" class="btn-load-more" style="display:none;">
+                <i class='bx bx-plus-circle'></i> Cargar más resultados
+            </button>
+        </div>
+
+    </main>
+
+    <!-- MODAL DETALLE -->
+    <div class="modal-overlay" id="modal-detalle">
+        <div class="modal">
+            <div class="modal-header">
+                <div>
+                    <p class="modal-eyebrow" id="det-sujeto">Sujeto</p>
+                    <h3 id="det-texto">Texto de la proposición</h3>
+                </div>
+                <button class="modal-close" id="modal-close"><i class='bx bx-x'></i></button>
+            </div>
+
+            <div class="modal-body">
+
+                <!-- Resultado oficial -->
+                <div class="detail-section">
+                    <p class="detail-label">Resultado oficial</p>
+                    <div class="result-pill" id="det-resultado-pill">
+                        <!-- se llena dinámicamente -->
+                    </div>
+                </div>
+
+                <!-- Tu predicción -->
+                <div class="detail-section">
+                    <p class="detail-label">Tu predicción</p>
+                    <div id="det-mi-prediccion" class="pred-summary">
+                        <!-- se llena dinámicamente -->
+                    </div>
+                </div>
+
+                <!-- Desglose de ganancias/pérdidas -->
+                <div class="detail-section" id="det-balance-section">
+                    <p class="detail-label">Balance de esta predicción</p>
+                    <div class="balance-breakdown" id="det-balance">
+                        <!-- se llena dinámicamente -->
+                    </div>
+                </div>
+
+                <!-- Validación IA -->
+                <div class="detail-section">
+                    <p class="detail-label">Validación</p>
+                    <div class="validation-row" id="det-validacion">
+                        <!-- se llena dinámicamente -->
+                    </div>
+                </div>
+
+                <!-- Fechas -->
+                <div class="detail-dates" id="det-fechas">
+                    <!-- se llena dinámicamente -->
+                </div>
+
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn btn-cancel" id="btn-cerrar-detalle">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="../js/resultados.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,85 @@
+version: '3.8'
+
+services:
+  gathel-db:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: gathel_db_server
+    user: root
+    environment:
+      - ACCEPT_EULA=Y
+      - MSSQL_SA_PASSWORD=Gathel123
+      - MSSQL_PID=Developer
+      - TZ=America/Costa_Rica
+    ports:
+      - "1434:1433"
+    volumes:
+      - gathel_db_data_v2:/var/opt/mssql/data
+    networks:
+      - gathel-network
+    healthcheck:
+      test: ["CMD", "/opt/mssql-tools18/bin/sqlcmd", "-S", "localhost", "-U", "sa", "-P", "Gathel123", "-C",
+             "-Q", "IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = 'gathel_db') CREATE DATABASE gathel_db;"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  flyway:
+    image: flyway/flyway:latest
+    environment:
+      - TZ=America/Costa_Rica
+    command: >
+      -url="jdbc:sqlserver://gathel-db:1433;databaseName=gathel_db;encrypt=true;trustServerCertificate=true"
+      -user="sa"
+      -password="Gathel123"
+      migrate
+      -installedBy="${DESARROLLADOR_NAME}"
+    volumes:
+      - ./Scripts:/flyway/sql
+    networks:
+      - gathel-network
+    depends_on:
+      gathel-db:
+        condition: service_healthy
+
+  gathel-backend:
+    build:
+      context: ./Backend
+      dockerfile: Dockerfile.backend
+    container_name: gathel_backend
+    environment:
+      - TZ=America/Costa_Rica
+      - DB_SERVER=gathel-db,1433
+      - DB_NAME=gathel_db
+      - DB_USER=sa
+      - DB_PASSWORD=Gathel123
+    ports:
+      - "8000:8000"          
+    networks:
+      - gathel-network
+    depends_on:
+      gathel-db:
+        condition: service_healthy
+      flyway:
+        condition: service_completed_successfully
+    restart: on-failure
+
+  gathel-frontend:
+    build:
+      context: ./Frontend
+      dockerfile: Dockerfile.frontend
+    container_name: gathel_frontend
+    ports:
+      - "80:80"
+    networks:
+      - gathel-network
+    depends_on:
+      - gathel-backend
+    restart: on-failure
+
+volumes:
+  gathel_db_data_v2:
+    driver: local
+
+networks:
+  gathel-network:
+    driver: bridge

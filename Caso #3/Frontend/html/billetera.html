@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gathel - Billetera</title>
+    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+    <link rel="stylesheet" href="../css/billetera.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+
+<body>
+
+    <!-- NAVBAR -->
+    <nav class="navbar">
+        <div class="nav-brand">
+            <span class="brand-icon"><i class='bx bx-game'></i></span>
+            <span class="brand-name">Gathel</span>
+        </div>
+        <div class="nav-links">
+            <a href="inicioGathel.html" class="nav-link"><i class='bx bx-home'></i> Inicio</a>
+            <a href="proposiciones.html" class="nav-link"><i class='bx bx-bulb'></i> Proposiciones</a>
+            <a href="misProposiciones.html" class="nav-link"><i class='bx bx-user-check'></i> Sobre mí</a>
+            <a href="misPredicciones.html" class="nav-link"><i class='bx bx-target-lock'></i> Mis Predicciones</a>
+            <a href="billetera.html" class="nav-link active"><i class='bx bx-wallet'></i> Billetera</a>
+            <a href="resultados.html" class="nav-link"><i class='bx bx-trophy'></i> Resultados</a>
+        </div>
+        <div class="nav-user">
+            <span class="nav-username" id="nav-username">Jugador</span>
+            <button class="btn-logout" id="btn-logout"><i class='bx bx-log-out'></i> Salir</button>
+        </div>
+    </nav>
+
+    <main class="main-content">
+
+        <!-- ENCABEZADO -->
+        <div class="page-header">
+            <div>
+                <h1 class="page-title">Mi Billetera</h1>
+                <p class="page-subtitle">Administrá tus puntos y tu saldo real.</p>
+            </div>
+        </div>
+
+        <!-- AVISO MODO SANDBOX -->
+        <div class="sandbox-banner">
+            <i class='bx bx-test-tube'></i>
+            <span>Modo de pruebas: ningún movimiento aquí es dinero real. Los depósitos y retiros son simulados.</span>
+        </div>
+
+        <!-- BALANCE CARDS -->
+        <div class="balance-grid">
+            <div class="balance-card points-card">
+                <div class="balance-card-top">
+                    <div class="balance-icon"><i class='bx bx-coin-stack'></i></div>
+                    <span class="balance-tag">PTS</span>
+                </div>
+                <span class="balance-amount" id="balance-points">—</span>
+                <span class="balance-label">Puntos disponibles</span>
+                <div class="balance-card-actions">
+                    <button class="btn-mini" id="btn-canjear-pts"><i class='bx bx-gift'></i> Canjear</button>
+                </div>
+            </div>
+
+            <div class="balance-card money-card">
+                <div class="balance-card-top">
+                    <div class="balance-icon"><i class='bx bx-dollar-circle'></i></div>
+                    <span class="balance-tag">USD</span>
+                </div>
+                <span class="balance-amount" id="balance-money">—</span>
+                <span class="balance-label">Saldo real disponible</span>
+                <div class="balance-card-actions">
+                    <button class="btn-mini" id="btn-depositar"><i class='bx bx-plus'></i> Depositar</button>
+                    <button class="btn-mini outline" id="btn-retirar"><i class='bx bx-minus'></i> Retirar</button>
+                </div>
+            </div>
+
+            <div class="balance-card reserved-card">
+                <div class="balance-card-top">
+                    <div class="balance-icon"><i class='bx bx-lock-alt'></i></div>
+                    <span class="balance-tag">Reservado</span>
+                </div>
+                <span class="balance-amount" id="balance-reserved">—</span>
+                <span class="balance-label">En predicciones activas</span>
+            </div>
+        </div>
+
+        <!-- MÉTODOS DE PAGO -->
+        <section class="section-title">
+            <h2><i class='bx bx-credit-card'></i> Métodos de pago</h2>
+            <span class="section-badge" id="methods-count">0</span>
+        </section>
+
+        <div class="payment-methods-list" id="payment-methods-list">
+            <!-- Se llena dinámicamente -->
+        </div>
+
+        <button class="btn-add-method" id="btn-add-method">
+            <i class='bx bx-plus-circle'></i> Agregar método de pago
+        </button>
+
+        <!-- HISTORIAL DE MOVIMIENTOS -->
+        <section class="section-title">
+            <h2><i class='bx bx-history'></i> Historial de movimientos</h2>
+        </section>
+
+        <div class="filters-bar">
+            <div class="filter-tabs" id="filter-tabs">
+                <button class="filter-tab active" data-filter="all">Todos</button>
+                <button class="filter-tab" data-filter="PTS">Puntos</button>
+                <button class="filter-tab" data-filter="USD">Dinero</button>
+            </div>
+        </div>
+
+        <div id="transactions-list" class="transactions-list">
+            <!-- Se llena dinámicamente -->
+        </div>
+
+        <div style="text-align:center; margin: 28px 0;">
+            <button id="btn-cargar-mas" class="btn-load-more" style="display:none;">
+                <i class='bx bx-plus-circle'></i> Cargar más movimientos
+            </button>
+        </div>
+
+    </main>
+
+    <!-- MODAL DEPOSITAR -->
+    <div class="modal-overlay" id="modal-deposito">
+        <div class="modal">
+            <div class="modal-header">
+                <h3><i class='bx bx-plus-circle'></i> Depositar dinero</h3>
+                <button class="modal-close" data-close="modal-deposito"><i class='bx bx-x'></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="input-box">
+                    <label>Monto a depositar (USD)</label>
+                    <input type="number" id="dep-monto" min="1" step="0.01" placeholder="Ej: 20.00" />
+                    <i class='bx bx-dollar'></i>
+                </div>
+                <div class="input-box">
+                    <label>Método de pago</label>
+                    <select id="dep-metodo">
+                        <option value="">Seleccioná un método...</option>
+                    </select>
+                    <i class='bx bx-chevron-down'></i>
+                </div>
+                <div class="quick-amounts">
+                    <button type="button" class="chip-amount" data-amount="10">$10</button>
+                    <button type="button" class="chip-amount" data-amount="25">$25</button>
+                    <button type="button" class="chip-amount" data-amount="50">$50</button>
+                    <button type="button" class="chip-amount" data-amount="100">$100</button>
+                </div>
+                <p class="modal-disclaimer"><i class='bx bx-info-circle'></i> Esto es un entorno de pruebas — no se realizará ningún cobro real.</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-cancel" data-close="modal-deposito">Cancelar</button>
+                <button class="btn btn-submit" id="btn-confirmar-deposito">Confirmar depósito</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL RETIRAR -->
+    <div class="modal-overlay" id="modal-retiro">
+        <div class="modal">
+            <div class="modal-header">
+                <h3><i class='bx bx-minus-circle'></i> Retirar dinero</h3>
+                <button class="modal-close" data-close="modal-retiro"><i class='bx bx-x'></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="input-box">
+                    <label>Monto a retirar (USD)</label>
+                    <input type="number" id="ret-monto" min="1" step="0.01" placeholder="Ej: 15.00" />
+                    <i class='bx bx-dollar'></i>
+                </div>
+                <p class="avail-label">Disponible: <strong id="ret-disponible">—</strong></p>
+                <div class="input-box">
+                    <label>Método de retiro</label>
+                    <select id="ret-metodo">
+                        <option value="">Seleccioná un método...</option>
+                    </select>
+                    <i class='bx bx-chevron-down'></i>
+                </div>
+                <p class="modal-disclaimer"><i class='bx bx-info-circle'></i> Entorno simulado: el retiro se acredita instantáneamente en este ambiente de pruebas.</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-cancel" data-close="modal-retiro">Cancelar</button>
+                <button class="btn btn-submit" id="btn-confirmar-retiro">Confirmar retiro</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL AGREGAR MÉTODO DE PAGO -->
+    <div class="modal-overlay" id="modal-metodo">
+        <div class="modal">
+            <div class="modal-header">
+                <h3><i class='bx bx-credit-card'></i> Agregar método de pago</h3>
+                <button class="modal-close" data-close="modal-metodo"><i class='bx bx-x'></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="input-box">
+                    <label>Tipo de método</label>
+                    <select id="metodo-tipo">
+                        <option value="credit_card">Tarjeta de crédito</option>
+                        <option value="debit_card">Tarjeta de débito</option>
+                        <option value="bank_transfer">Transferencia bancaria</option>
+                        <option value="sinpe">SINPE Móvil</option>
+                        <option value="paypal">PayPal</option>
+                    </select>
+                    <i class='bx bx-chevron-down'></i>
+                </div>
+                <div class="input-box">
+                    <label>Alias / Apodo</label>
+                    <input type="text" id="metodo-alias" placeholder="Ej: Tarjeta principal" />
+                    <i class='bx bx-tag'></i>
+                </div>
+                <div class="input-box" id="metodo-numero-box">
+                    <label>Número de tarjeta / cuenta (simulado)</label>
+                    <input type="text" id="metodo-numero" placeholder="Ej: 4111 1111 1111 1111" maxlength="19" />
+                    <i class='bx bx-credit-card-front'></i>
+                </div>
+                <p class="modal-disclaimer"><i class='bx bx-shield'></i> No se guardan datos reales. Esta información es ficticia para fines de demostración.</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-cancel" data-close="modal-metodo">Cancelar</button>
+                <button class="btn btn-submit" id="btn-guardar-metodo">Guardar método</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL CANJEAR PUNTOS -->
+    <div class="modal-overlay" id="modal-canje">
+        <div class="modal">
+            <div class="modal-header">
+                <h3><i class='bx bx-gift'></i> Canjear puntos</h3>
+                <button class="modal-close" data-close="modal-canje"><i class='bx bx-x'></i></button>
+            </div>
+            <div class="modal-body">
+                <p class="avail-label">Tenés <strong id="canje-disponible">—</strong> pts disponibles</p>
+                <div id="partners-list" class="partners-list">
+                    <!-- Se llena dinámicamente -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-cancel" data-close="modal-canje">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="../js/billetera.js"></script>
+</body>
+
+</html>

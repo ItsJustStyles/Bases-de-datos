@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gathel - Mis Proposiciones</title>
+    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+    <link rel="stylesheet" href="../css/misProposiciones.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+
+<body>
+
+    <!-- NAVBAR -->
+    <nav class="navbar">
+        <div class="nav-brand">
+            <span class="brand-icon"><i class='bx bx-game'></i></span>
+            <span class="brand-name">Gathel</span>
+        </div>
+        <div class="nav-links">
+            <a href="inicioGathel.html" class="nav-link"><i class='bx bx-home'></i> Inicio</a>
+            <a href="proposiciones.html" class="nav-link"><i class='bx bx-bulb'></i> Proposiciones</a>
+            <a href="misProposiciones.html" class="nav-link active"><i class='bx bx-user-check'></i> Sobre mí</a>
+            <a href="misPredicciones.html" class="nav-link"><i class='bx bx-target-lock'></i> Mis Predicciones</a>
+            <a href="billetera.html" class="nav-link"><i class='bx bx-wallet'></i> Billetera</a>
+            <a href="resultados.html" class="nav-link"><i class='bx bx-trophy'></i> Resultados</a>
+        </div>
+        <div class="nav-user">
+            <span class="nav-username" id="nav-username">Jugador</span>
+            <button class="btn-logout" id="btn-logout"><i class='bx bx-log-out'></i> Salir</button>
+        </div>
+    </nav>
+
+    <main class="main-content">
+
+        <!-- ENCABEZADO -->
+        <div class="page-header">
+            <div>
+                <h1 class="page-title">Proposiciones sobre mí</h1>
+                <p class="page-subtitle">Otros jugadores crearon estas proposiciones sobre ti. Decidí si las aceptás o las rechazás.</p>
+            </div>
+            <div class="header-balance">
+                <div class="balance-chip">
+                    <i class='bx bx-coin-stack'></i>
+                    <span id="header-points">—</span> pts
+                </div>
+            </div>
+        </div>
+
+        <!-- AVISO DE PENALIZACIÓN -->
+        <div class="warning-banner">
+            <i class='bx bx-error-circle'></i>
+            <span>Si rechazás una proposición ganadora, perdés <strong>1 punto</strong> de tu balance. Revisá bien antes de decidir.</span>
+        </div>
+
+        <!-- TABS DE ESTADO -->
+        <div class="filter-tabs" id="filter-tabs">
+            <button class="filter-tab active" data-filter="pending_acceptance">
+                <i class='bx bx-time-five'></i> Pendientes <span class="tab-count" id="count-pending">0</span>
+            </button>
+            <button class="filter-tab" data-filter="active">
+                <i class='bx bx-check-circle'></i> Aceptadas
+            </button>
+            <button class="filter-tab" data-filter="rejected_subject">
+                <i class='bx bx-x-circle'></i> Rechazadas
+            </button>
+        </div>
+
+        <!-- LISTA -->
+        <div id="propositions-list" class="propositions-list">
+            <!-- Se llena dinámicamente -->
+        </div>
+
+        <!-- BOTÓN CARGAR MÁS -->
+        <div style="text-align:center; margin: 28px 0;">
+            <button id="btn-cargar-mas" class="btn-load-more" style="display:none;">
+                <i class='bx bx-plus-circle'></i> Cargar más
+            </button>
+        </div>
+
+    </main>
+
+    <!-- MODAL DE DECISIÓN -->
+    <div class="modal-overlay" id="modal-decision">
+        <div class="modal">
+            <div class="modal-header">
+                <div>
+                    <p class="modal-eyebrow">Proposición sobre ti</p>
+                    <h3 id="modal-prop-text">Texto de la proposición</h3>
+                </div>
+                <button class="modal-close" id="modal-close"><i class='bx bx-x'></i></button>
+            </div>
+
+            <div class="modal-body">
+                <div class="modal-meta-row">
+                    <span><i class='bx bx-user'></i> Creada por <strong id="modal-autor">—</strong></span>
+                    <span><i class='bx bx-calendar'></i> <span id="modal-fecha">—</span></span>
+                </div>
+
+                <div class="modal-disclaimer">
+                    <i class='bx bx-shield'></i>
+                    Esta proposición ya fue revisada y aprobada por el sistema de moderación de Gathel.
+                </div>
+
+                <!-- Si decide aceptar, debe poner fecha límite -->
+                <div class="input-box" id="deadline-box">
+                    <label>Si aceptás, definí la fecha límite para recibir predicciones</label>
+                    <input type="datetime-local" id="prop-deadline" />
+                    <i class='bx bx-calendar-plus'></i>
+                </div>
+
+                <div class="penalty-notice">
+                    <i class='bx bx-info-circle'></i>
+                    Rechazar esta proposición te costará <strong>1 punto</strong> de tu balance actual (<span id="penalty-balance">—</span> pts disponibles).
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn btn-reject" id="btn-reject"><i class='bx bx-x'></i> Rechazar</button>
+                <button class="btn btn-accept" id="btn-accept"><i class='bx bx-check'></i> Aceptar y activar</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="../js/misProposiciones.js"></script>
+</body>
+
+</html>
